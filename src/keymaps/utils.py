@@ -2,12 +2,20 @@
 
 from pathlib import Path
 
-from inputflow.keymaps.base import (
-    ECODE_TO_HID_BTN,
-    ECODE_TO_HID_KEY,
-    VK_TO_HID_BTN,
-    VK_TO_HID_KEY,
-)
+try:
+    from inputflow.keymaps.base import (
+        ECODE_TO_HID_BTN,
+        ECODE_TO_HID_KEY,
+        VK_TO_HID_BTN,
+        VK_TO_HID_KEY,
+    )
+except ImportError:
+    from src.keymaps.base import (
+        ECODE_TO_HID_BTN,
+        ECODE_TO_HID_KEY,
+        VK_TO_HID_BTN,
+        VK_TO_HID_KEY,
+    )
 
 
 def generate_vk_map_file(file_path: str | Path):

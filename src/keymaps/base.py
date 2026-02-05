@@ -85,8 +85,9 @@ if evdev:
         e.KEY_KPENTER: 0x58,
         # --- Alphabet (KEY_A=30 -> 0x04) ---
         # Linux evdev 的字母分布不像 VK 那样连续，建议显式映射或使用 e.KEY_A 引用
-        **{getattr(e, f'KEY_{c}'): (ord(c) - ord('A') + 0x04) for c in
-           'ABCDEFGHIJKLMNOPQRSTUVWXYZ'},
+        **{
+            getattr(e, f'KEY_{c}'): (ord(c) - ord('A') + 0x04) for c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        },
         # --- Digits (KEY_1=2 -> 0x1E) ---
         **{getattr(e, f'KEY_{i}'): (0x1E + i - 1) for i in range(1, 10)},
         e.KEY_0: 0x27,

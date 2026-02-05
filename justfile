@@ -1,4 +1,4 @@
-set shell := ["pwsh", "-c"]
+set shell := ["zsh", "-c"]
 
 scripts_dir := "scripts"
 
