@@ -30,14 +30,36 @@
 使用 `evdev.UInput` 创建虚拟键盘和鼠标：
 
 ```python
-from evdev import UInput, ecodes as e
+import evdev
+from src.keymaps.ecode_map import ECODE_TO_HID
 
-capabilities = {
-    e.EV_KEY: [e.KEY_A, e.KEY_B, e.KEY_ENTER, ...],  # 键盘按键列表
-    e.EV_REL: [e.REL_X, e.REL_Y],  # 鼠标相对移动
-    e.EV_KEY: [e.BTN_LEFT, e.BTN_RIGHT]  # 鼠标按键
+# Create a comprehensive set of capabilities to ensure the device is recognized as a mouse
+events = {
+    evdev.ecodes.EV_REL: [
+        evdev.ecodes.REL_X,
+        evdev.ecodes.REL_Y,
+        evdev.ecodes.REL_WHEEL,
+        evdev.ecodes.REL_HWHEEL,
+    ],
+    evdev.ecodes.EV_KEY: [
+        # Mouse buttons
+        evdev.ecodes.BTN_LEFT,
+        evdev.ecodes.BTN_RIGHT,
+        evdev.ecodes.BTN_MIDDLE,
+        evdev.ecodes.BTN_SIDE,
+        evdev.ecodes.BTN_EXTRA,
+        # Keyboard keys
+        *[code if code <= 0xFF else (code >> 8) for code in ECODE_TO_HID.keys()],
+    ],
 }
-ui = UInput(capabilities, name='pydeskflow-virtual-device')
+
+device = evdev.UInput(
+    events=events,
+    name='InputFlow Virtual Mouse',
+    vendor=0x1234,  # Fake vendor ID
+    product=0x5678,  # Fake product ID
+    version=1,
+)
 ```
 
 ### 第二阶段：协议实现
