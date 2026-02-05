@@ -390,6 +390,12 @@ class SynergyProtocol:
             return self._parse_ebsy_msg(msg)
         elif cmd == b'LSYN':
             return self._parse_lsyn_msg(msg)
+        elif cmd == b'CIAK':
+            return self._parse_ciak_msg(msg)
+        elif cmd == b'CROP':
+            return self._parse_crop_msg(msg)
+        elif cmd == b'DSOP':
+            return self._parse_dsop_msg(msg)
         else:
             raise ValueError(f'未知消息类型: {cmd}')
 
@@ -640,3 +646,112 @@ class SynergyProtocol:
         language_str = msg[8: 8 + lang_len].decode('utf-8')
         languages = [language_str[i: i + 2] for i in range(0, len(language_str), 2)]
         return MessageType.LSYN, {'languages': languages}
+
+    def _parse_ciak_msg(self, msg: bytes) -> ParsedMessage:
+        """解析 CIAK 消息（屏幕信息确认）
+
+        CIAK: 无参数
+
+        Args:
+            msg: 原始消息
+
+        Returns:
+            解析结果
+        """
+        params = self.parse_ciak(msg)
+        return MessageType.CIAK, params
+
+    def _parse_crop_msg(self, msg: bytes) -> ParsedMessage:
+        """解析 CROP 消息（重置选项命令）
+
+        CROP: 无参数
+
+        Args:
+            msg: 原始消息
+
+        Returns:
+            解析结果
+        """
+        params = self.parse_crop(msg)
+        return MessageType.CROP, params
+
+    def _parse_dsop_msg(self, msg: bytes) -> ParsedMessage:
+        """解析 DSOP 消息（设置客户端选项）
+
+        DSOP: option/value 对列表
+
+        Args:
+            msg: 原始消息
+
+        Returns:
+            解析结果
+        """
+        params = self.parse_dsop(msg)
+        return MessageType.DSOP, params
+
+    def build_crop(self) -> bytes:
+        """构建重置选项命令
+
+        Returns:
+            CROP 消息字节
+        """
+        msg = b'CROP'
+        header = struct.pack('>I', len(msg))
+        return header + msg
+
+    def parse_crop(self, msg: bytes) -> dict:
+        """解析重置选项命令
+
+        Args:
+            msg: 原始消息字节
+
+        Returns:
+            空字典
+        """
+        if len(msg) < 4:
+            raise ValueError(f'CROP 消息长度不足: {len(msg)}')
+        return {}
+
+    def build_dsop(self, options: list[tuple[str, int]]) -> bytes:
+        """构建设置选项消息
+
+        DSOP: option(4字节字符串) + value(4字节) 的对列表
+
+        Args:
+            options: [(option_code, value), ...]
+
+        Returns:
+            DSOP 消息字节
+        """
+        pairs = b''
+        for option, value in options:
+            pairs += option.encode('ascii')[:4].ljust(4, b'\x00') + struct.pack('>I', value)
+        msg = b'DSOP' + struct.pack('>I', len(pairs)) + pairs
+        header = struct.pack('>I', len(msg))
+        return header + msg
+
+    def parse_dsop(self, msg: bytes) -> dict:
+        """解析设置选项消息
+
+        DSOP: option(4字节字符串) + value(4字节) 的对列表
+
+        Args:
+            msg: 原始消息字节
+
+        Returns:
+            {'options': [(option_code, value), ...]}
+        """
+        if len(msg) < 8:
+            raise ValueError(f'DSOP 消息长度不足: {len(msg)}')
+        data_len = struct.unpack('>I', msg[4:8])[0]
+        num_pairs = data_len // 8
+        options = []
+        offset = 8
+        for _ in range(num_pairs):
+            if offset + 8 > len(msg):
+                break
+            option_code = msg[offset: offset + 4].decode('ascii')
+            value = struct.unpack('>I', msg[offset + 4: offset + 8])[0]
+            options.append((option_code, value))
+            offset += 8
+        return {'options': options}

@@ -39,6 +39,7 @@ class MessageType(str, Enum):
     LSYN = 'LSYN'
     DFTR = 'DFTR'
     DDRG = 'DDRG'
+    CROP = 'CROP'
 
     EICV = 'EICV'
     EBSY = 'EBSY'
