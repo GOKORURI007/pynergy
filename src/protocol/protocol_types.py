@@ -11,83 +11,73 @@ class MsgType(str, Enum):
     """Deskflow message type enum"""
 
     # --- handshake ---
-    Hello = "Hello"
-    HelloBack = "HelloBack"
+    Hello = 'Hello'
+    HelloBack = 'HelloBack'
 
     # --- command ---
-    CCLP = "CCLP"
+    CCLP = 'CCLP'
     """Clipboard grab notification"""
-    CClose = "CClose"
+    CBYE = 'CBYE'
     """Close connection command"""
-    CINN = "CINN"
+    CINN = 'CINN'
     """Enter screen command"""
-    CIAK = "CIAK"
+    CIAK = 'CIAK'
     """Screen information acknowledgment"""
-    CALV = "CALV"
+    CALV = 'CALV'
     """Keep-alive message"""
-    COUT = "COUT"
+    COUT = 'COUT'
     """Leave screen command"""
-    CNOP = "CNOP"
+    CNOP = 'CNOP'
     """No operation command"""
-    CROP = "CROP"
+    CROP = 'CROP'
     """Reset options command"""
-    CSEC = "CSEC"
+    CSEC = 'CSEC'
     """Screensaver state change"""
 
     # --- data ---
-    DKDN = "DKDN"
+    DKDN = 'DKDN'
     """Key press event"""
-    DKDL = "DKDL"
+    DKDL = 'DKDL'
     """Key press with language code"""
-    DKRP = "DKRP"
+    DKRP = 'DKRP'
     """Key auto-repeat event"""
-    DKUP = "DKUP"
+    DKUP = 'DKUP'
     """Key release event"""
-    DMDN = "DMDN"
+    DMDN = 'DMDN'
     """Mouse press event"""
-    DMMV = "DMMV"
+    DMMV = 'DMMV'
     """Mouse move event"""
-    DMRM = "DMRM"
+    DMRM = 'DMRM'
     """Relative mouse movement"""
-    DMUP = "DMUP"
+    DMUP = 'DMUP'
     """Mouse release event"""
-    DMWM = "DMWM"
+    DMWM = 'DMWM'
     """Mouse wheel scroll event"""
-    DCLP = "DCLP"
+    DCLP = 'DCLP'
     """Clipboard data transfer"""
-    DINF = "DINF"
+    DINF = 'DINF'
     """Client screen information"""
-    DSOP = "DSOP"
+    DSOP = 'DSOP'
     """Set client options"""
-    DDRG = "DDRG"
+    DDRG = 'DDRG'
     """Drag and drop information"""
-    DFTR = "DFTR"
+    DFTR = 'DFTR'
     """File transfer data"""
-    LSYN = "LSYN"
+    LSYN = 'LSYN'
     """Language synchronization"""
-    SECN = "SECN"
+    SECN = 'SECN'
     """Secure input notification (macOS)"""
 
     # --- query ---
-    QINF = "QINF"
+    QINF = 'QINF'
     """Query screen information"""
 
     # --- error ---
-    EBAD = "EBAD"
+    EBAD = 'EBAD'
     """Protocol violation"""
-    EBSY = "EBSY"
+    EBSY = 'EBSY'
     """Client name already in use"""
-    EICV = "EICV"
+    EICV = 'EICV'
     """Incompatible protocol versions"""
-    EUNK = "EUNK"
+    EUNK = 'EUNK'
     """Unknown client name"""
-
-
-class ClientState(Enum):
-    """客户端状态枚举"""
-
-    DISCONNECTED = 0
-    CONNECTING = 1
-    HANDSHAKE = 2
-    CONNECTED = 3
-    ACTIVE = 4
