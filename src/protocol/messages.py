@@ -300,14 +300,14 @@ class DKeyUpMsg(MsgBase):
 class DMouseDownMsg(MsgBase):
     """Mouse press event
 
-    Button IDs:
-        1: Left button
-        2: Right button
-        3: Middle button
-        4+: Additional buttons (side buttons, etc.)
-意外实参
-    Attributes:
-        button: ButtonID (1 byte) - Mouse button identifier
+        Button IDs:
+            1: Left button
+            2: Right button
+            3: Middle button
+            4+: Additional buttons (side buttons, etc.)
+    意外实参
+        Attributes:
+            button: ButtonID (1 byte) - Mouse button identifier
     """
 
     button: UByte
