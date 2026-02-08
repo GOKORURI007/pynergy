@@ -1,77 +1,55 @@
-import re
-import struct
 from dataclasses import dataclass
-from typing import TypeVar
 
+from src.protocol.core import MsgBase, Registry
 from src.protocol.protocol_types import MsgType
-
-T = TypeVar('T', bound='MsgBase')
-
-
-@dataclass(slots=True)
-class MsgBase:
-    """消息基类"""
-    _INSTRUCTIONS = None
-    _FORMAT = ''
-
-    @classmethod
-    def _compile_format(cls):
-        # 匹配如 "H", "I", "10s", "Is" 等片段
-        pattern = re.compile(r'(Is|[0-9]+s|[a-zA-Z])')
-        parts = pattern.findall(cls._FORMAT.lstrip('>'))
-
-        instructions = []
-        for p in parts:
-            if p == 'Is':
-                instructions.append(('VAR_STR', 4))
-            elif 's' in p:
-                instructions.append(('FIX_STR', struct.calcsize(p), p))
-            else:
-                instructions.append(('FIX_VAL', struct.calcsize(p), p))
-        cls._INSTRUCTIONS = instructions
-
-    @classmethod
-    def from_unpack(cls, data: bytes):
-        if not cls._INSTRUCTIONS:
-            cls._compile_format()
-
-        offset = 0
-        args = []
-        for op, size, *meta in cls._INSTRUCTIONS:
-            if op == 'FIX_VAL':
-                args.append(struct.unpack_from(f">{meta[0]}", data, offset)[0])
-                offset += size
-            elif op == 'FIX_STR':
-                raw = struct.unpack_from(f">{meta[0]}", data, offset)[0]
-                args.append(raw.decode('utf-8'))
-                offset += size
-            elif op == 'VAR_STR':
-                length = struct.unpack_from(">I", data, offset)[0]
-                offset += 4
-                args.append(data[offset:offset + length].decode('utf-8'))
-                offset += length
-        return cls(*args)
+from src.protocol.struct_types import *
 
 
+@Registry.register(MsgType.Hello)
 @dataclass(slots=True)
 class HelloMsg(MsgBase):
-    _FORMAT = '>7sHH'
-    CODE = MsgType.Hello
-    protocol_name: str
-    major: int
-    minor: int
+    """hello message
+
+    This is the first message sent by the server after a client connects.
+    The client uses this to determine protocol compatibility.
+
+    Attributes:
+        protocol_name: Protocol name (7 bytes, fixed-size) - A fixed-size field for
+        the protocol identifier, used for backward compatibility. The supported values are
+        "Synergy" or "Barrier". "Barrier" is the default protocol name, while "Synergy" is used
+        only for backwards compatibility. This is an exception to the standard length-prefixed
+        string format.
+        major: Server major version number (2 bytes)
+        minor: Server minor version number (2 bytes)
+
+    Examples:
+        Barrier protocol, version 1.8
+        "Barrier\x00\x01\x00\x08"
+    """
+
+    protocol_name: FixedString[7]
+    major: UInt16
+    minor: UInt16
 
 
+@Registry.register(MsgType.HelloBack)
 @dataclass(slots=True)
 class HelloBackMsg(MsgBase):
-    _FORMAT = '>7sHHIs'
-    CODE = MsgType.HelloBack
-    protocol_name: str
-    major: int
-    minor: int
-    name: str
+    """Client hello response message
+    Attributes:
+        protocol_name: Protocol name (7 bytes, fixed-size) - A fixed-size field for the protocol identifier, which must match the server's. The supported values are "Synergy" or "Barrier". "Barrier" is the default protocol name, while "Synergy" is used only for backwards compatibility. This is an exception to the standard length-prefixed string format.
+        major: Client major version number (2 bytes)
+        minor: Client minor version number (2 bytes)
+        name: Client name (string) - A standard length-prefixed string.
+    """
+
+    protocol_name: FixedString[7]
+    major: UInt16
+    minor: UInt16
+    name: VarString
 
 
+@Registry.register(MsgType.CCLP)
 @dataclass(slots=True)
 class CClipboardMsg(MsgBase):
     """Clipboard grab notification
@@ -85,12 +63,12 @@ class CClipboardMsg(MsgBase):
         identifier: Clipboard identifier (1 byte)
         sequence: Sequence number (4 bytes)
     """
-    _FORMAT = '>BI'
-    CODE = MsgType.CCLP
-    identifier: int
-    sequence: int
+
+    identifier: UByte
+    sequence: UInt32
 
 
+@Registry.register(MsgType.CBYE)
 @dataclass(slots=True)
 class CCloseMsg(MsgBase):
     """Close connection command
@@ -98,9 +76,9 @@ class CCloseMsg(MsgBase):
     Instructs the client to close the connection gracefully.
     The client should clean up resources and disconnect.
     """
-    CODE = MsgType.CBYE
 
 
+@Registry.register(MsgType.CINN)
 @dataclass(slots=True)
 class CEnterMsg(MsgBase):
     """Enter screen command
@@ -117,14 +95,14 @@ class CEnterMsg(MsgBase):
         sequence_number: Sequence number (4 bytes, unsigned)
         mod_key_mask: Modifier key mask (2 bytes, unsigned)
     """
-    _FORMAT = '>HHIH'
-    CODE = MsgType.CINN
-    entry_x: int
-    entry_y: int
-    sequence_number: int
-    mod_key_mask: int
+
+    entry_x: Int16
+    entry_y: Int16
+    sequence_number: UInt32
+    mod_key_mask: UInt16
 
 
+@Registry.register(MsgType.CIAK)
 @dataclass(slots=True)
 class CInfoAckMsg(MsgBase):
     """Screen information acknowledgment
@@ -133,9 +111,9 @@ class CInfoAckMsg(MsgBase):
     This acknowledgment is sent for every kMsgDInfo, whether the primary
     had previously sent a kMsgQInfo query.
     """
-    CODE = MsgType.CIAK
 
 
+@Registry.register(MsgType.CALV)
 @dataclass(slots=True)
 class CKeepAliveMsg(MsgBase):
     """Keep-alive message
@@ -153,9 +131,9 @@ class CKeepAliveMsg(MsgBase):
         - If server doesn't receive response within timeout, it disconnects client
         - If client doesn't receive keep-alives, it should disconnect from server
     """
-    CODE = MsgType.CALV
 
 
+@Registry.register(MsgType.COUT)
 @dataclass(slots=True)
 class CLeaveMsg(MsgBase):
     """Leave screen command
@@ -166,9 +144,9 @@ class CLeaveMsg(MsgBase):
         2. Only send clipboards that have changed since the last leave
         3. Use the sequence number from the most recent kMsgCEnter
     """
-    CODE = MsgType.COUT
 
 
+@Registry.register(MsgType.CNOP)
 @dataclass(slots=True)
 class CNoopMsg(MsgBase):
     """No operation command
@@ -176,9 +154,9 @@ class CNoopMsg(MsgBase):
     A no-operation message that can be used for testing connectivity or as a placeholder.
     Has no effect on the receiving end.
     """
-    CODE = MsgType.CNOP
 
 
+@Registry.register(MsgType.CROP)
 @dataclass(slots=True)
 class CResetOptionsMsg(MsgBase):
     """Reset options command
@@ -186,9 +164,9 @@ class CResetOptionsMsg(MsgBase):
     Instructs the client to reset all of its options to their default values.
     This is typically sent when the server configuration changes.
     """
-    CODE = MsgType.CROP
 
 
+@Registry.register(MsgType.CSEC)
 @dataclass(slots=True)
 class CScreenSaverMsg(MsgBase):
     """Screensaver state change
@@ -199,11 +177,11 @@ class CScreenSaverMsg(MsgBase):
     Attributes:
         state: Screensaver state (1 byte): 1 = started, 0 = stopped Examples:
     """
-    _FORMAT = '>?'
-    CODE = MsgType.CSEC
-    state: bool
+
+    state: Bool
 
 
+@Registry.register(MsgType.DKDN)
 @dataclass(slots=True)
 class DKeyDownMsg(MsgBase):
     """Key press event
@@ -229,13 +207,13 @@ class DKeyDownMsg(MsgBase):
         key_button: KeyButton (2 bytes) - Physical key code, often called a "keycode" or "scancode".
         This is the raw, platform-dependent scan code of the key pressed.
     """
-    _FORMAT = '>HHH'
-    CODE = MsgType.DKDN
-    key_id: int
-    mod_key_mask: int
-    key_button: int
+
+    key_id: UInt16
+    mod_key_mask: UInt16
+    key_button: UInt16
 
 
+@Registry.register(MsgType.DKDL)
 @dataclass(slots=True)
 class DKeyDownLangMsg(MsgBase):
     """Key press with language code
@@ -254,16 +232,16 @@ class DKeyDownLangMsg(MsgBase):
 
     Examples:
         'a' key (KeyID 0x61), no modifiers, physical key (KeyButton 0x1E), English
-        "DKDL\x00\x61\x00\x00\x00\x1E\x00\x00\x00\x02en"
+        "DKDL\x00\x61\x00\x00\x00\x1e\x00\x00\x00\x02en"
     """
-    _FORMAT = '>HHHIs'
-    CODE = MsgType.DKDL
-    key_id: int
-    mod_key_mask: int
-    key_button: int
-    language_code: str
+
+    key_id: UInt16
+    mod_key_mask: UInt16
+    key_button: UInt16
+    language_code: VarString
 
 
+@Registry.register(MsgType.DKRP)
 @dataclass(slots=True)
 class DKeyRepeatMsg(MsgBase):
     """Key auto-repeat event
@@ -283,17 +261,17 @@ class DKeyRepeatMsg(MsgBase):
 
     Examples:
         'a' key repeating 3 times, English layout
-        "DKRP\x00\x61\x00\x00\x00\x03\x00\x1E\x00\x00\x00\x02en"
+        "DKRP\x00\x61\x00\x00\x00\x03\x00\x1e\x00\x00\x00\x02en"
     """
-    _FORMAT = '>HHHIs'
-    CODE = MsgType.DKRP
-    key_id: int
-    mod_key_mask: int
-    repeat_count: int
-    key_button: int
-    language_code: str
+
+    key_id: UInt16
+    mod_key_mask: UInt16
+    repeat_count: UInt16
+    key_button: UInt16
+    language_code: VarString
 
 
+@Registry.register(MsgType.DKUP)
 @dataclass(slots=True)
 class DKeyUpMsg(MsgBase):
     """Key release event
@@ -311,13 +289,13 @@ class DKeyUpMsg(MsgBase):
         key_button: KeyButton (2 bytes) - Physical key code, often called a "keycode" or "scancode".
         This is the raw, platform-dependent scan code of the key pressed.
     """
-    _FORMAT = '>HHH'
-    CODE = MsgType.DKUP
-    key_id: int
-    mod_key_mask: int
-    key_button: int
+
+    key_id: UInt16
+    mod_key_mask: UInt16
+    key_button: UInt16
 
 
+@Registry.register(MsgType.DMDN)
 @dataclass(slots=True)
 class DMouseDownMsg(MsgBase):
     """Mouse press event
@@ -327,15 +305,15 @@ class DMouseDownMsg(MsgBase):
         2: Right button
         3: Middle button
         4+: Additional buttons (side buttons, etc.)
-
+意外实参
     Attributes:
         button: ButtonID (1 byte) - Mouse button identifier
     """
-    _FORMAT = '>B'
-    CODE = MsgType.DMDN
-    button: int
+
+    button: UByte
 
 
+@Registry.register(MsgType.DMMV)
 @dataclass(slots=True)
 class DMouseMoveMsg(MsgBase):
     """Mouse move event
@@ -347,12 +325,12 @@ class DMouseMoveMsg(MsgBase):
         x: X coordinate (2 bytes, signed) - Absolute screen position
         y: Y coordinate (2 bytes, signed) - Absolute screen position
     """
-    _FORMAT = '>HH'
-    CODE = MsgType.DMMV
-    x: int
-    y: int
+
+    x: Int16
+    y: Int16
 
 
+@Registry.register(MsgType.DMRM)
 @dataclass(slots=True)
 class MouseRelMoveMsg(MsgBase):
     """Relative mouse movement
@@ -366,12 +344,12 @@ class MouseRelMoveMsg(MsgBase):
         x_delta: X delta (2 bytes, signed) - Horizontal movement
         y_delta: Y delta (2 bytes, signed) - Vertical movement
     """
-    _FORMAT = '>HH'
-    CODE = MsgType.DMRM
-    x_delta: int
-    y_delta: int
+
+    x_delta: Int16
+    y_delta: Int16
 
 
+@Registry.register(MsgType.DMUP)
 @dataclass(slots=True)
 class DMouseUpMsg(MsgBase):
     """Mouse release event
@@ -381,11 +359,11 @@ class DMouseUpMsg(MsgBase):
     Attributes:
         button: ButtonID (1 byte) - Mouse button identifier
     """
-    _FORMAT = '>B'
-    CODE = MsgType.DMUP
-    button: int
+
+    button: UByte
 
 
+@Registry.register(MsgType.DMWM)
 @dataclass(slots=True)
 class DMouseWheelMsg(MsgBase):
     """Mouse wheel scroll event
@@ -403,12 +381,12 @@ class DMouseWheelMsg(MsgBase):
         x_delta: X delta (2 bytes, signed) - Horizontal scroll
         y_delta: Y delta (2 bytes, signed) - Vertical scroll
     """
-    _FORMAT = '>HH'
-    CODE = MsgType.DMWM
-    x_delta: int
-    y_delta: int
+
+    x_delta: Int16
+    y_delta: Int16
 
 
+@Registry.register(MsgType.DCLP)
 @dataclass(slots=True)
 class DClipboardMsg(MsgBase):
     """Clipboard data transfer
@@ -435,16 +413,16 @@ class DClipboardMsg(MsgBase):
 
     Examples:
         Primary clipboard, sequence 1, no flags, text "Hello World"
-        "DCLP\x00\x00\x00\x00\x01\x00\x00\x00\x00\x0BHello World"
+        "DCLP\x00\x00\x00\x00\x01\x00\x00\x00\x00\x0bHello World"
     """
-    _FORMAT = '>BI?Is'
-    CODE = MsgType.DCLP
-    identifier: int
-    sequence: int
-    flag: bool
-    data: str
+
+    identifier: UByte
+    sequence: UInt32
+    flag: UByte
+    data: VarString
 
 
+@Registry.register(MsgType.DINF)
 @dataclass(slots=True)
 class DInfoMsg(MsgBase):
     """Client screen information
@@ -470,19 +448,19 @@ class DInfoMsg(MsgBase):
 
     Examples:
         Screen at (0,0), 1920x1080, mouse at (400,300)
-        "DINF\x00\x00\x00\x00\x07\x80\x04\x38\x00\x00\x01\x90\x01\x2C"
+        "DINF\x00\x00\x00\x00\x07\x80\x04\x38\x00\x00\x01\x90\x01\x2c"
     """
-    _FORMAT = '>HHHHHHH'
-    CODE = MsgType.DINF
-    left_edge_coord: int
-    top_edge_coord: int
-    screen_width: int
-    screen_height: int
-    warp_zone: int  # obsolete
-    mouse_x: int
-    mouse_y: int
+
+    left_edge_coord: Int16
+    top_edge_coord: Int16
+    screen_width: UInt16
+    screen_height: UInt16
+    warp_zone: Int16  # obsolete
+    mouse_x: Int16
+    mouse_y: Int16
 
 
+@Registry.register(MsgType.DSOP)
 @dataclass(slots=True)
 class DSetOptionsMsg(MsgBase):
     """Set client options
@@ -498,15 +476,14 @@ class DSetOptionsMsg(MsgBase):
         2 pairs: option 1 = value 1, option 2 = value 0
         "DSOP\x00\x00\x00\x02\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x00"
     """
-    _FORMAT = '>B'
-    CODE = MsgType.DSOP
-    options: dict[str, int]
+
+    paris: UInt32
 
     @classmethod
-    def from_unpack(cls, data: bytes):
-        ...
+    def unpack(cls, data: bytes): ...
 
 
+@Registry.register(MsgType.DDRG)
 @dataclass(slots=True)
 class DDragInfoMsg(MsgBase):
     """Drag and drop information
@@ -527,16 +504,14 @@ class DDragInfoMsg(MsgBase):
         Dragging 2 files
         "DDRG\x00\x02/path/to/file1.txt\x00/path/to/file2.txt\x00"
     """
-    _FORMAT = '>HIs'
-    CODE = MsgType.DDRG
-    file_counts: int
-    file_paths: list[str]
+
+    file_counts: UInt16
 
     @classmethod
-    def from_unpack(cls, data: bytes):
-        ...
+    def unpack(cls, data: bytes): ...
 
 
+@Registry.register(MsgType.DFTR)
 @dataclass(slots=True)
 class DFileTransferMsg(MsgBase):
     """File transfer data
@@ -565,16 +540,14 @@ class DFileTransferMsg(MsgBase):
         "DFTR\x02[1024 bytes of file data]"
         "DFTR\x03"
     """
-    _FORMAT = '>BI?Is'
-    CODE = MsgType.DFTR
-    mark: int
-    data: str
+
+    mark: UByte
 
     @classmethod
-    def from_unpack(cls, data: bytes):
-        ...
+    def unpack(cls, data: bytes): ...
 
 
+@Registry.register(MsgType.LSYN)
 @dataclass(slots=True)
 class DLanguageSynchronisationMsg(MsgBase):
     """Language synchronization
@@ -591,13 +564,13 @@ class DLanguageSynchronisationMsg(MsgBase):
 
     Examples:
         Server supports English, French, German, Spanish
-        "LSYN\x00\x00\x00\x0Ben,fr,de,es"
+        "LSYN\x00\x00\x00\x0ben,fr,de,es"
     """
-    _FORMAT = '>Is'
-    CODE = MsgType.LSYN
-    lang_list: list[str]
+
+    lang_list: VarString
 
 
+@Registry.register(MsgType.SECN)
 @dataclass(slots=True)
 class DSecureInputNotificationMsg(MsgBase):
     """Secure input notification (macOS)
@@ -618,11 +591,11 @@ class DSecureInputNotificationMsg(MsgBase):
         Terminal app is requesting secure input
         "SECN\x00\x00\x00\x08Terminal"
     """
-    _FORMAT = '>Is'
-    CODE = MsgType.SECN
-    app_name: str
+
+    app_name: VarString
 
 
+@Registry.register(MsgType.QINF)
 @dataclass(slots=True)
 class QInfoMsg(MsgBase):
     """Query screen information
@@ -638,9 +611,9 @@ class QInfoMsg(MsgBase):
         - When the server needs updated screen information
         - After configuration changes
     """
-    CODE = MsgType.QINF
 
 
+@Registry.register(MsgType.EBAD)
 @dataclass(slots=True)
 class EBadMsg(MsgBase):
     """Protocol violation
@@ -660,9 +633,9 @@ class EBadMsg(MsgBase):
         - Version mismatch not caught earlier
         - Malicious or broken client
     """
-    CODE = MsgType.EBAD
 
 
+@Registry.register(MsgType.EBSY)
 @dataclass(slots=True)
 class EBusyMsg(MsgBase):
     """Client name already in use
@@ -675,9 +648,9 @@ class EBusyMsg(MsgBase):
         3. Allow the user to choose a different name
         4. Retry connection with the new name
     """
-    CODE = MsgType.EBSY
 
 
+@Registry.register(MsgType.EICV)
 @dataclass(slots=True)
 class EIncompatibleMsg(MsgBase):
     """Incompatible protocol versions
@@ -694,12 +667,12 @@ class EIncompatibleMsg(MsgBase):
         major: Primary major version (2 bytes)
         minor: Primary minor version (2 bytes)
     """
-    _FORMAT = '>HH'
-    CODE = MsgType.EICV
-    major: int
-    minor: int
+
+    major: UInt16
+    minor: UInt16
 
 
+@Registry.register(MsgType.EUNK)
 @dataclass(slots=True)
 class EUnknownMsg(MsgBase):
     """Unknown client name
@@ -716,4 +689,3 @@ class EUnknownMsg(MsgBase):
         - Server configuration
         - Network connectivity to correct server
     """
-    CODE = MsgType.EUNK
