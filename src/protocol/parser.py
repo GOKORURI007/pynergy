@@ -13,7 +13,7 @@ class SynergyParser:
         """存入收到的原始字节"""
         if not data:
             return
-        logger.trace(f'Feeded {len(data)} bytes into buffer')
+        logger.trace(f'Fed {len(data)} bytes into buffer')
         self._buffer.extend(data)
 
     def next_msg(self) -> MsgBase | None:
@@ -21,6 +21,8 @@ class SynergyParser:
         尝试解析并返回一个消息对象。
         """
         # 基础长度检查（前 4 字节为包长度）
+        msg_code_raw = 'unknown'
+        total_packet_size = 0
         if len(self._buffer) < 4:
             return None
 
@@ -66,7 +68,9 @@ class SynergyParser:
 
             except (struct.error, UnicodeDecodeError, ValueError) as e:
                 logger.error(
-                    f'Failed to unpack message body (CODE: {msg_code_raw if "msg_code_raw" in locals() else "unknown"}): {e}'
+                    f'Failed to unpack message body (CODE: '
+                    f'{msg_code_raw if "msg_code_raw" in locals() else "unknown"}):'
+                    f' {e}'
                 )
                 return None
 
