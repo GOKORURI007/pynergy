@@ -2,7 +2,15 @@ from dataclasses import dataclass
 
 from src.protocol.core import MsgBase, Registry
 from src.protocol.protocol_types import MsgType
-from src.protocol.struct_types import *
+from src.protocol.struct_types import (
+    Bool,
+    FixedString,
+    Int16,
+    UInt8,
+    UInt16,
+    UInt32,
+    VarString,
+)
 
 
 @Registry.register(MsgType.Hello)
@@ -64,7 +72,7 @@ class CClipboardMsg(MsgBase):
         sequence: Sequence number (4 bytes)
     """
 
-    identifier: UByte
+    identifier: UInt8
     sequence: UInt32
 
 
@@ -129,7 +137,7 @@ class CKeepAliveMsg(MsgBase):
         - Server sends keep-alive to client
         - Client immediately responds with keep-alive back to server
         - If server doesn't receive response within timeout, it disconnects client
-        - If client doesn't receive keep-alives, it should disconnect from server
+        - If client doesn't receive keep-alive, it should disconnect from server
     """
 
 
@@ -310,7 +318,7 @@ class DMouseDownMsg(MsgBase):
             button: ButtonID (1 byte) - Mouse button identifier
     """
 
-    button: UByte
+    button: UInt8
 
 
 @Registry.register(MsgType.DMMV)
@@ -360,7 +368,7 @@ class DMouseUpMsg(MsgBase):
         button: ButtonID (1 byte) - Mouse button identifier
     """
 
-    button: UByte
+    button: UInt8
 
 
 @Registry.register(MsgType.DMWM)
@@ -416,9 +424,9 @@ class DClipboardMsg(MsgBase):
         "DCLP\x00\x00\x00\x00\x01\x00\x00\x00\x00\x0bHello World"
     """
 
-    identifier: UByte
+    identifier: UInt8
     sequence: UInt32
-    flag: UByte
+    flag: UInt8
     data: VarString
 
 
@@ -541,7 +549,7 @@ class DFileTransferMsg(MsgBase):
         "DFTR\x03"
     """
 
-    mark: UByte
+    mark: UInt8
 
     @classmethod
     def unpack(cls, data: bytes): ...
