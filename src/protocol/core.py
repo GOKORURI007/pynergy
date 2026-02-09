@@ -92,7 +92,7 @@ class MsgBase:
                     elif op == 'FIX_STR':
                         # 解包固定长度字符串并 strip
                         raw_val = struct.unpack_from(f'>{fmt}', data, offset)[0]
-                        val = raw_val.decode('utf-8').rstrip('\x00')
+                        val = raw_val.decode().rstrip('\x00')
                         args.append(val)
                         offset += size
                         logger.trace(f"解包固定字符串: 格式={fmt}, 值='{val}', 新偏移={offset}")
@@ -110,7 +110,7 @@ class MsgBase:
                                 f'变长字符串数据不完整：声明长度={length}, 可用数据={len(data) - offset}'
                             )
 
-                        val = data[offset: offset + length].decode('utf-8')
+                        val = data[offset: offset + length].decode()
                         args.append(val)
                         offset += length
                         logger.debug(f"解包变长字符串: 长度={length}, 值='{val}', 新偏移={offset}")

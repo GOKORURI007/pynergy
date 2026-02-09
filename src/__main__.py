@@ -4,7 +4,7 @@ from typing import Optional
 import click
 from loguru import logger
 
-from src.client import get_screen_size, SynergyClient
+from src.client.connection import SynergyClient, get_screen_size
 
 
 @click.command()

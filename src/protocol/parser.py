@@ -85,8 +85,8 @@ class SynergyParser:
 
         def get_class(packet):
             # 从 packet 中提取 msg_code 并查找对应的消息类
-            msg_code_raw = struct.unpack_from('>4s', packet)[0]
-            return Registry.get_class(msg_code_raw)
+            msg_code = struct.unpack_from('>4s', packet)[0]
+            return Registry.get_class(msg_code.decode())
 
         return self._parse_packet(get_class)
 
