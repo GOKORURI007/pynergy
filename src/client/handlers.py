@@ -156,12 +156,9 @@ class PynergyHandler:
         logger.debug(f'Handle {msg}')
 
         x, y = msg.x, msg.y
-        if self.client.coords_mode == 'relative':
-            dx, dy = self.client.abs_to_rel(x, y)
-            if dx != 0 or dy != 0:
-                self.client.device.write_mouse_move(dx, dy)
-        else:
-            self.client.write_mouse_abs(x, y)
+        dx, dy = self.client.abs_to_rel(x, y)
+        if dx != 0 or dy != 0:
+            self.client.device.write_mouse_move(dx, dy)
 
     @device_check
     def on_dmrm(self, msg: DMouseRelMoveMsg):

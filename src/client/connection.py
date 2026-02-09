@@ -6,12 +6,11 @@
 
 import socket
 
-from evdev import ecodes
 from loguru import logger
 
 from ..device import VirtualDevice
 from ..protocol import HelloBackMsg, HelloMsg, MsgID, PynergyParser
-from ..utils import get_screen_size
+from ..utils import get_mouse_position, get_screen_size
 from .client_types import ClientProtocol, ClientState
 from .handlers import MessageDispatcher, PynergyHandler
 
@@ -60,6 +59,8 @@ class PynergyClient(ClientProtocol):
         self.last_x: int | None = None
         self.last_y: int | None = None
         self.pressed_keys: set[int] = set()
+
+        self.internal_x, self.internal_y = get_mouse_position() or (0, 0)
 
         self.parser: PynergyParser = PynergyParser()
         self.handler: PynergyHandler = PynergyHandler(self)
@@ -142,32 +143,18 @@ class PynergyClient(ClientProtocol):
         """将 Synergy 绝对坐标转换为相对位移
 
         Args:
-            x: 0-65535 范围的绝对坐标
-            y: 0-65535 范围的绝对坐标
+            x: 0-screen_width 范围的绝对坐标
+            y: 0-screen_height 范围的绝对坐标
 
         Returns:
             (dx, dy) 相对位移
         """
-        if self.last_x is None or self.last_y is None:
-            self.last_x, self.last_y = x, y
-            return 0, 0
+        dx = x - self.internal_x
+        dy = y - self.internal_y
 
-        dx = int((x - self.last_x) * (self.screen_width / 65535))
-        dy = int((y - self.last_y) * (self.screen_height / 65535))
-
-        self.last_x, self.last_y = x, y
+        self.internal_x = x
+        self.internal_y = y
         return dx, dy
-
-    def write_mouse_abs(self, x: int, y: int) -> None:
-        """写入绝对坐标
-
-        Args:
-            x: X 坐标 (0-65535)
-            y: Y 坐标 (0-65535)
-        """
-        device = self.device
-        device.write(ecodes.EV_ABS, ecodes.ABS_X, x)
-        device.write(ecodes.EV_ABS, ecodes.ABS_Y, y)
 
     def close(self) -> None:
         """关闭连接和设备"""
