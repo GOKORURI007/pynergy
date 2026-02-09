@@ -1,4 +1,6 @@
 import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -86,3 +88,56 @@ def get_screen_size() -> tuple[int, int]:
         return int(env_width), int(env_height)
 
     return 1920, 1080
+
+
+def get_mouse_position() -> tuple[int, int] | None:
+    """
+    根据当前系统环境 (X11/Wayland) 获取鼠标全局坐标
+    Returns: (x, y) 元组，失败返回 None
+    """
+    session_type = os.environ.get('XDG_SESSION_TYPE', '').lower()
+
+    # --- 1. 处理 X11 环境 ---
+    if session_type == 'x11' or os.environ.get('DISPLAY'):
+        try:
+            from Xlib import display
+
+            d = display.Display()
+            root = d.screen().root
+            pointer = root.query_pointer()
+            return pointer.root_x, pointer.root_y
+        except Exception as e:
+            print(f'X11 获取失败: {e}')
+
+    # --- 2. 处理 Wayland 环境 ---
+    # Wayland 没有统一 API，需根据不同的合成器 (Compositor) 分别处理
+    if session_type == 'wayland' or os.environ.get('WAYLAND_DISPLAY'):
+        # A. Hyprland (NixOS 用户常用)
+        if shutil.which('hyprctl'):
+            try:
+                # 输出格式通常为 "x, y"
+                out = subprocess.check_output(['hyprctl', 'cursorpos'], text=True)
+                x, y = map(int, out.strip().split(','))
+                return x, y
+            except:
+                pass
+
+        # B. KDE Plasma (Wayland)
+        if shutil.which('qdbus'):
+            try:
+                # 调用 KDE 的 DBus 接口
+                out = subprocess.check_output(
+                    ['qdbus', 'org.kde.KWin', '/KWin', 'org.kde.KWin.cursorPos'], text=True
+                )
+                # 输出通常是 QPoint(x, y)
+                parts = out.strip().replace('QPoint(', '').replace(')', '').split(',')
+                return int(parts[0]), int(parts[1])
+            except:
+                pass
+
+        # C. GNOME (Wayland) - 极难获取
+        # GNOME 出于安全考虑彻底封死了非插件获取坐标的路径
+        # 除非通过特定的开发者工具或正在运行的录屏会话
+        print('警告: GNOME Wayland 环境下获取全局坐标受限')
+
+    return None

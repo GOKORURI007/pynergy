@@ -61,7 +61,7 @@ class PynergyParser:
 
                 # 4. 执行反序列化
                 msg_obj = cls.unpack(packet)
-                logger.debug(f'Successfully parsed message: {msg_obj}')
+                logger.trace(f'Successfully parsed message: {msg_obj}')
                 return msg_obj
 
             except (struct.error, UnicodeDecodeError, ValueError) as e:

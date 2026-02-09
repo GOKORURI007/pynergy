@@ -184,6 +184,7 @@ dependencies = [
     { name = "evdev", marker = "sys_platform == 'linux'" },
     { name = "loguru" },
     { name = "pynput" },
+    { name = "python-xlib" },
     { name = "toml" },
 ]
 
@@ -205,6 +206,7 @@ requires-dist = [
     { name = "evdev", marker = "sys_platform == 'linux'", specifier = ">=1.9.2" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "pynput", specifier = ">=1.8.1" },
+    { name = "python-xlib", specifier = ">=0.33" },
     { name = "toml", specifier = ">=0.10.2" },
 ]
 

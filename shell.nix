@@ -7,6 +7,7 @@ pkgs.mkShell {
     libxkbcommon
     evtest
     linuxHeaders
+    libinput
   ];
 
   # 2. 告诉 Python 到哪里找内核头文件

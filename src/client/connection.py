@@ -10,7 +10,7 @@ from loguru import logger
 
 from ..device import VirtualDevice
 from ..protocol import HelloBackMsg, HelloMsg, MsgID, PynergyParser
-from ..utils import get_mouse_position, get_screen_size
+from ..utils import get_screen_size
 from .client_types import ClientProtocol, ClientState
 from .handlers import MessageDispatcher, PynergyHandler
 
@@ -60,7 +60,7 @@ class PynergyClient(ClientProtocol):
         self.last_y: int | None = None
         self.pressed_keys: set[int] = set()
 
-        self.internal_x, self.internal_y = get_mouse_position() or (0, 0)
+        self.internal_x, self.internal_y = (0, 0)
 
         self.parser: PynergyParser = PynergyParser()
         self.handler: PynergyHandler = PynergyHandler(self)
@@ -113,7 +113,6 @@ class PynergyClient(ClientProtocol):
                     msg = self.parser.next_msg()
                     if msg is None:
                         break
-                    logger.debug(f'收到消息: {msg}')
                     self.dispatcher.dispatch(msg)
         except (ConnectionResetError, BrokenPipeError) as e:
             logger.error(f'连接断开: {e}')

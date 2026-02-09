@@ -9,6 +9,7 @@ dependencies = [
     "toml>=0.10.2",
     "click>=8.3.1",
     "pynput>=1.8.1",
+    "python-xlib>=0.33",
 ]
 
 [dependency-groups]

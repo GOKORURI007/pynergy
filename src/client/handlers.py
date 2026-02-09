@@ -4,6 +4,8 @@ from evdev import ecodes
 from loguru import logger
 
 from src.client.client_types import ClientProtocol, ClientState, HandlerMethod
+from src.keymaps import hid_to_ecode
+from src.keymaps.synergy_map import synergy_to_hid
 from src.protocol import (
     CEnterMsg,
     CInfoAckMsg,
@@ -22,6 +24,7 @@ from src.protocol import (
     EIncompatibleMsg,
     MsgBase,
 )
+from src.utils import get_mouse_position
 
 
 def device_check(func):
@@ -76,6 +79,8 @@ class PynergyHandler:
     def on_cinn(self, msg: CEnterMsg):
         logger.debug(f'Handle {msg}')
         logger.info(f'进入屏幕，位置: ({msg.entry_x}, {msg.entry_y})')
+        self.client.internal_x, self.client.internal_y = get_mouse_position()
+        self.client.write_mouse_abs(msg.entry_x, msg.entry_y)
         self.client.state = ClientState.ACTIVE
         modifiers = msg.mod_key_mask
         self.client.sync_modifiers(modifiers)
@@ -87,7 +92,7 @@ class PynergyHandler:
         logger.debug(f'Handle {msg}')
 
     def on_calv(self, msg: CKeepAliveMsg):
-        logger.debug(f'Handle {msg}')
+        logger.trace(f'Handle {msg}')
         assert self.client.sock is not None
         self.client.sock.sendall(msg.pack_for_socket())
 
@@ -116,8 +121,9 @@ class PynergyHandler:
         logger.debug(f'Handle {msg}')
 
         key_code = msg.key_button
+
         self.client.pressed_keys.add(key_code)
-        self.client.device.write_key(key_code, True)
+        self.client.device.write_key(hid_to_ecode(synergy_to_hid(key_code)), True)
 
     @device_check
     def on_dkdl(self, msg: DKeyDownLangMsg):
@@ -125,7 +131,7 @@ class PynergyHandler:
 
         key_code = msg.key_button
         self.client.pressed_keys.add(key_code)
-        self.client.device.write_key(key_code, True)
+        self.client.device.write_key(hid_to_ecode(synergy_to_hid(key_code)), True)
 
     @device_check
     def on_dkrp(self, msg: DKeyRepeatMsg):
@@ -134,7 +140,7 @@ class PynergyHandler:
         key_code = msg.key_button
         if key_code not in self.client.pressed_keys:
             self.client.pressed_keys.add(key_code)
-            self.client.device.write_key(key_code, True)
+            self.client.device.write_key(hid_to_ecode(synergy_to_hid(key_code)), True)
 
     @device_check
     def on_dkup(self, msg: DKeyUpMsg):
@@ -142,14 +148,15 @@ class PynergyHandler:
 
         key_code = msg.key_button
         self.client.pressed_keys.discard(key_code)
-        self.client.device.write_key(key_code, False)
+        self.client.device.write_key(hid_to_ecode(synergy_to_hid(key_code)), False)
 
     @device_check
     def on_dmdn(self, msg: DMouseDownMsg):
         logger.debug(f'Handle {msg}')
 
         button = msg.button
-        self.client.device.write_key(button, True)
+        # button = synergy_mouse_to_ecodes.get(button, button)
+        self.client.device.write_key(hid_to_ecode(synergy_to_hid((button << 8) + 0xAA)), True)
 
     @device_check
     def on_dmmv(self, msg: DMouseMoveMsg):
@@ -173,7 +180,8 @@ class PynergyHandler:
         logger.debug(f'Handle {msg}')
 
         button = msg.button
-        self.client.device.write_key(button, False)
+        # button = synergy_mouse_to_ecodes.get(button, button)
+        self.client.device.write_key(hid_to_ecode(synergy_to_hid((button << 8) + 0xAA)), False)
 
     @device_check
     def on_dmwm(self, msg: DMouseWheelMsg):
@@ -181,9 +189,9 @@ class PynergyHandler:
 
         x, y = msg.x_delta, msg.y_delta
         if y != 0:
-            self.client.device.write(ecodes.EV_REL, ecodes.REL_WHEEL, y)
+            self.client.device.write(ecodes.EV_REL, ecodes.REL_WHEEL, int(y / 120))
         if x != 0:
-            self.client.device.write(ecodes.EV_REL, ecodes.REL_HWHEEL, x)
+            self.client.device.write(ecodes.EV_REL, ecodes.REL_HWHEEL, int(x / 120))
 
     @device_check
     def on_dclp(self, msg: MsgBase):
@@ -218,14 +226,15 @@ class PynergyHandler:
 
     def on_qinf(self, msg: MsgBase):
         logger.debug(f'Handle {msg}，发送 DINF')
+        self.client.internal_x, self.client.internal_y = get_mouse_position()
         dinf_msg = DInfoMsg(
             0,
             0,
             self.client.screen_width,
             self.client.screen_height,
             0,
-            0,
-            0,
+            self.client.internal_x,
+            self.client.internal_y,
         )
         assert self.client.sock is not None
         self.client.sock.sendall(dinf_msg.pack_for_socket())
