@@ -7,7 +7,7 @@ from .core import MsgBase, Registry
 from .protocol_types import MsgID
 
 
-class SynergyParser:
+class PynergyParser:
     def __init__(self):
         self._buffer = bytearray()
 

@@ -10,13 +10,13 @@ from evdev import ecodes
 from loguru import logger
 
 from ..device import VirtualDevice
-from ..protocol import HelloBackMsg, HelloMsg, MsgID, SynergyParser
+from ..protocol import HelloBackMsg, HelloMsg, MsgID, PynergyParser
 from ..utils import get_screen_size
 from .client_types import ClientProtocol, ClientState
 from .handlers import MessageDispatcher, PynergyHandler
 
 
-class SynergyClient(ClientProtocol):
+class PynergyClient(ClientProtocol):
     """Deskflow 客户端类
 
     负责连接服务器、接收消息并将输入事件注入系统。
@@ -61,7 +61,7 @@ class SynergyClient(ClientProtocol):
         self.last_y: int | None = None
         self.pressed_keys: set[int] = set()
 
-        self.parser: SynergyParser = SynergyParser()
+        self.parser: PynergyParser = PynergyParser()
         self.handler: PynergyHandler = PynergyHandler(self)
         self.dispatcher: MessageDispatcher = MessageDispatcher(self.handler)
 

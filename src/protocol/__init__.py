@@ -33,7 +33,7 @@ from .messages import (
     HelloMsg,
     QInfoMsg,
 )
-from .parser import SynergyParser
+from .parser import PynergyParser
 from .protocol_types import MsgID
 from .struct_types import (
     Double,
@@ -60,7 +60,7 @@ from .struct_types import (
     XPad,
 )
 
-_core_exports = [Registry, MsgBase, SynergyParser, MsgID]
+_core_exports = [Registry, MsgBase, PynergyParser, MsgID]
 
 # 自动收集所有消息类（继承自 MsgBase）
 _message_classes = [

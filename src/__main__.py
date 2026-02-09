@@ -4,7 +4,7 @@ from typing import Optional
 import click
 from loguru import logger
 
-from src.client.connection import SynergyClient, get_screen_size
+from src.client.connection import PynergyClient, get_screen_size
 
 
 @click.command()
@@ -71,7 +71,7 @@ def main(
     logger.info(f'启动客户端，服务器: {server}:{port}, 客户端名称: {client_name}')
 
     try:
-        client = SynergyClient(
+        client = PynergyClient(
             server=server,
             port=port,
             coords_mode=coords_mode,
