@@ -9,10 +9,7 @@ from typing import Mapping, Sequence
 import evdev
 from evdev import ecodes
 
-try:
-    from src.keymaps.ecode_map import ECODE_TO_HID
-except ImportError:
-    ECODE_TO_HID = {}
+from src.keymaps.ecode_map import ECODE_TO_HID
 
 
 class VirtualDevice:
@@ -60,6 +57,13 @@ class VirtualDevice:
                 ecodes.REL_WHEEL,
                 ecodes.REL_HWHEEL,
             ],
+            ecodes.EV_ABS: [
+                ecodes.ABS_X,
+                ecodes.ABS_Y,
+                ecodes.ABS_WHEEL,
+                ecodes.ABS_HAT0X,
+                ecodes.ABS_HAT0Y,
+            ],
             ecodes.EV_KEY: self._get_key_codes(),
         }
         return capabilities
@@ -81,10 +85,7 @@ class VirtualDevice:
             ecodes.BTN_EXTRA,
         ]
         for ecode in ECODE_TO_HID.keys():
-            if ecode <= 0xFF:
-                key_codes.append(ecode)
-            else:
-                key_codes.append(ecode >> 8)
+            key_codes.append(ecode)
         return key_codes
 
     def write_mouse_move(self, dx: int, dy: int) -> None:
