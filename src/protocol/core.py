@@ -72,7 +72,7 @@ class MsgBase:
     @classmethod
     def unpack(cls: T, data: bytes) -> T:
         try:
-            logger.debug(f'开始解包 {cls.__name__}: 数据长度={len(data)} 字节')
+            logger.trace(f'开始解包 {cls.__name__}: 数据长度={len(data)} 字节')
             data = cls.before_unpack(data)
             offset = 0
             args = []
@@ -125,7 +125,7 @@ class MsgBase:
 
             result = cls(*args)  # type: ignore[call-arg]
             result = cls.after_unpack(result)
-            logger.success(f'成功解包 {cls.__name__}: {result}')
+            logger.trace(f'成功解包 {cls.__name__}: {result}')
             return result
 
         except Exception as e:
@@ -135,7 +135,7 @@ class MsgBase:
     def pack(self) -> bytes:
         """根据类定义的字段顺序和 _INSTRUCTIONS 动态打包"""
         try:
-            logger.debug(f'开始打包 {self}')
+            logger.trace(f'开始打包 {self}')
             self.before_pack()
             result = bytearray()
 
@@ -203,7 +203,7 @@ class MsgBase:
 
             final_result = bytes(result)
             final_result = self.after_pack(final_result)
-            logger.success(f'成功打包 {self.__class__.__name__}: 总长度={len(final_result)} 字节')
+            logger.trace(f'成功打包 {self.__class__.__name__}: 总长度={len(final_result)} 字节')
             return final_result
 
         except Exception as e:
