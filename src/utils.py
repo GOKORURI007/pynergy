@@ -96,9 +96,8 @@ def get_mouse_position() -> tuple[int, int] | None:
     Returns: (x, y) 元组，失败返回 None
     """
     session_type = os.environ.get('XDG_SESSION_TYPE', '').lower()
-
     # --- 1. 处理 X11 环境 ---
-    if session_type == 'x11' or os.environ.get('DISPLAY'):
+    if session_type == 'x11':
         try:
             from Xlib import display
 
@@ -116,11 +115,11 @@ def get_mouse_position() -> tuple[int, int] | None:
         if shutil.which('hyprctl'):
             try:
                 # 输出格式通常为 "x, y"
-                out = subprocess.check_output(['hyprctl', 'cursorpos'], text=True)
+                out: str = subprocess.check_output(['hyprctl', 'cursorpos'], text=True)
                 x, y = map(int, out.strip().split(','))
                 return x, y
-            except:
-                pass
+            except Exception as e:
+                print(f'Hyprland 获取失败: {e}')
 
         # B. KDE Plasma (Wayland)
         if shutil.which('qdbus'):
@@ -132,8 +131,8 @@ def get_mouse_position() -> tuple[int, int] | None:
                 # 输出通常是 QPoint(x, y)
                 parts = out.strip().replace('QPoint(', '').replace(')', '').split(',')
                 return int(parts[0]), int(parts[1])
-            except:
-                pass
+            except Exception as e:
+                print(f'KDE Plasma 获取失败: {e}')
 
         # C. GNOME (Wayland) - 极难获取
         # GNOME 出于安全考虑彻底封死了非插件获取坐标的路径
