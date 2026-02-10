@@ -19,7 +19,6 @@ class ClientState(Enum):
 class ClientProtocol(Protocol):
     server: str
     port: int
-    coords_mode: str
     name: str
 
     sock: socket.socket | None

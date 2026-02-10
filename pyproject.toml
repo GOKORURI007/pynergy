@@ -10,6 +10,7 @@ dependencies = [
     "click>=8.2.1",
     "pynput>=1.8.1",
     "python-xlib>=0.33",
+    "platformdirs>=4.5.0",
 ]
 
 [dependency-groups]

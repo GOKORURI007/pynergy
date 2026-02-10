@@ -2,26 +2,29 @@
 项目全局配置文件。
 """
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+from platformdirs import user_log_path
+
 LogLevel = Literal['TRACE', 'DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL']
 
-# 日志名称
-LOGGER_NAME: str = 'Pynergy'
-# 日志文件夹
-LOG_DIR: Path = Path.cwd() / 'logs'
-# 日志文件名
-LOG_FILE: str = 'pynergy.log'
-# 文件输出日志级别
-LOG_LEVEL_FILE: LogLevel = 'INFO'
-# 标准输出日志级别
-LOG_LEVEL_STDOUT: LogLevel = 'DEBUG'
 
-# src/config.py 文件末尾
-try:
-    # 尝试从本地配置文件中导入并覆盖
-    from .local_config import *  # noqa: F403
-except ImportError:
-    # 如果 a.py 不存在，则什么也不做
-    pass
+@dataclass
+class Config:
+    server: str = '127.0.0.1'
+    port: int = 24800
+    client_name: str = 'Pynergy'
+    screen_width: int = None
+    screen_height: int = None
+    # 日志名称
+    logger_name: str = 'Pynergy'
+    # 日志文件夹
+    log_dir: Path = user_log_path(appname='pynergy', appauthor=False)
+    # 日志文件名
+    log_file: str = 'pynergy.log'
+    # 文件输出日志级别
+    log_level_file: LogLevel = 'WARNING'
+    # 标准输出日志级别
+    log_level_stdout: LogLevel = 'INFO'

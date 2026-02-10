@@ -25,7 +25,6 @@ class PynergyClient(ClientProtocol):
         self,
         server: str,
         port: int = 24800,
-        coords_mode: str = 'relative',
         screen_width: int | None = None,
         screen_height: int | None = None,
         client_name: str = 'Pynergy',
@@ -36,7 +35,6 @@ class PynergyClient(ClientProtocol):
         Args:
             server: 服务器 IP 地址
             port: 端口号 (默认: 24800)
-            coords_mode: 坐标模式 ('relative' 或 'absolute')
             screen_width: 屏幕宽度 (可选，默认自动获取)
             screen_height: 屏幕高度 (可选，默认自动获取)
             client_name: 客户端名称
@@ -44,7 +42,6 @@ class PynergyClient(ClientProtocol):
         """
         self.server: str = server
         self.port: int = port
-        self.coords_mode: str = coords_mode
         self.name: str = client_name
 
         if screen_width is None or screen_height is None:

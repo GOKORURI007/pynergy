@@ -10,10 +10,11 @@ from src import config
 
 
 def init_logger(
-    name: str = config.LOGGER_NAME,
-    log_path: Path = config.LOG_DIR / config.LOG_FILE,
-    log_level_stdout: config.LogLevel = config.LOG_LEVEL_STDOUT,
-    log_level_file: config.LogLevel = config.LOG_LEVEL_FILE,
+    name: str,
+    log_dir: Path | str,
+    log_file: Path | str,
+    log_level_stdout: config.LogLevel | str,
+    log_level_file: config.LogLevel | str,
 ):
     """
     初始化日志记录器。
@@ -24,13 +25,13 @@ def init_logger(
 
     Args:
         name (str, optional): 日志记录器的名称。默认为 config.LOGGER_NAME。
-        log_path (str, optional): 日志文件的路径。默认为 config.LOG_FILE。
+        log_dir (str, optional): 日志文件的路径。默认为 config.LOG_FILE。
+        log_file (str, optional): 日志文件的路径。默认为 config.LOG_FILE。
         log_level_stdout (config.LogLevel, optional): 标准输出的日志级别。默认为 config.LOG_LEVEL_STDOUT。
         log_level_file (config.LogLevel, optional): 文件输出的日志级别。默认为 config.LOG_LEVEL_FILE。
     """
-    config.LOG_DIR.mkdir(exist_ok=True)
     logger.remove()
-
+    log_path = Path(log_dir) / log_file
     logger.add(
         sys.stdout,
         level=log_level_stdout,
