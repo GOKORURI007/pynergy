@@ -11,6 +11,7 @@ dependencies = [
     "pynput>=1.8.1",
     "python-xlib>=0.33",
     "platformdirs>=4.5.0",
+    "ruff>=0.15.0",
 ]
 
 [dependency-groups]
@@ -33,8 +34,7 @@ build-backend = "setuptools.build_meta"
 find = { }
 
 [project.scripts]
-# 格式：可执行文件名 = "包名.模块名:函数名"
-pynergy-client = "src.__main__:main"
+pynergy-client = "src.pynergy_client.__main__:main"
 
 [tool.uv]
 package = false

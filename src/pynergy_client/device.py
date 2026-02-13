@@ -9,7 +9,7 @@ from typing import Mapping, Sequence
 import evdev
 from evdev import ecodes
 
-from src.keymaps.ecode_map import ECODE_TO_HID
+from .keymaps.ecode_map import ECODE_TO_HID
 
 
 class VirtualDevice:

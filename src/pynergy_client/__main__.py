@@ -7,9 +7,9 @@ import click
 from loguru import logger
 from platformdirs import user_config_path
 
-from src.client.connection import PynergyClient, get_screen_size
-from src.config import Config
-from src.utils import init_logger
+from .client.connection import PynergyClient, get_screen_size
+from .config import Config
+from .utils import init_logger
 
 
 @click.command()

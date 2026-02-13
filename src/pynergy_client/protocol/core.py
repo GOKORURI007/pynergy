@@ -12,7 +12,7 @@ from typing import (
 
 from loguru import logger
 
-from src.protocol.protocol_types import MsgID
+from .protocol_types import MsgID
 
 OpCode: TypeAlias = Literal['FIX_VAL', 'FIX_STR', 'VAR_STR']
 InstructionType: TypeAlias = list[tuple[OpCode, int, str]]

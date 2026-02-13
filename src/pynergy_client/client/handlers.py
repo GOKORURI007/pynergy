@@ -4,10 +4,10 @@ from functools import wraps
 from evdev import ecodes
 from loguru import logger
 
-from src.client.client_types import ClientProtocol, ClientState, HandlerMethod
-from src.keymaps import hid_to_ecode
-from src.keymaps.synergy_map import synergy_to_hid
-from src.protocol import (
+from .client_types import ClientProtocol, ClientState, HandlerMethod
+from ..keymaps import hid_to_ecode
+from ..keymaps.synergy_map import synergy_to_hid
+from ..protocol import (
     CEnterMsg,
     CInfoAckMsg,
     CKeepAliveMsg,
@@ -25,7 +25,7 @@ from src.protocol import (
     EIncompatibleMsg,
     MsgBase,
 )
-from src.utils import get_mouse_position
+from ..utils import get_mouse_position
 
 
 def device_check(func):

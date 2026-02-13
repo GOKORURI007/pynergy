@@ -6,7 +6,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from src import config
+from . import config
 
 
 def init_logger(
@@ -53,7 +53,7 @@ def init_logger(
 
 
 def get_screen_size() -> tuple[int, int]:
-    """获取屏幕尺寸
+    """ 获取屏幕尺寸
 
     尝试从环境变量或 X11 获取屏幕尺寸，如果都失败则使用默认值。
 

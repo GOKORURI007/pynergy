@@ -10,7 +10,7 @@ try:
         VK_TO_HID_KEY,
     )
 except ImportError:
-    from src.keymaps.base import (
+    from .base import (
         ECODE_TO_HID_BTN,
         ECODE_TO_HID_KEY,
         VK_TO_HID_BTN,

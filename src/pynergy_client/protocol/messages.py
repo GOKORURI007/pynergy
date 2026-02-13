@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
-from src.protocol.core import MsgBase, Registry
-from src.protocol.protocol_types import MsgID
-from src.protocol.struct_types import (
+from .core import MsgBase, Registry
+from .protocol_types import MsgID
+from .struct_types import (
     Bool,
     FixedString,
     Int16,

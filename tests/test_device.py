@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 from evdev import ecodes
 
-from src.device import VirtualDevice
+from pynergy_client.device import VirtualDevice
 
 
 class TestVirtualDeviceCreation:
