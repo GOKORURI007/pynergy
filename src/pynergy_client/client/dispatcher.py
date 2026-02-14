@@ -1,9 +1,10 @@
 import asyncio
 import inspect
+from typing import Any
 
 from loguru import logger
 
-from ..pynergy_protocol import MsgBase, MsgID
+from ..pynergy_protocol import MsgID
 from .handlers import PynergyHandler
 from .protocols import ClientProtocol, DispatcherProtocol, MessageTask
 
@@ -38,8 +39,8 @@ class MessageDispatcher(DispatcherProtocol):
         logger.debug(f'f{self.__class__} 已加载 {len(mapping)} 个处理函数: {list(mapping.keys())}')
         return mapping
 
-    async def enqueue(self, msg: MsgBase, client: ClientProtocol):
-        handler = self._handler_map.get(msg.CODE)
+    async def enqueue(self, msg: Any, client: ClientProtocol):
+        handler = self._handler_map.get(msg.CODE, self.default_handler)
         task = MessageTask(handler, msg, client)
         await self.queue.put(task)
 

@@ -33,7 +33,9 @@ class BaseDeviceContext(ABC):
 
     def sync_logical_to_real(self):
         """同步理论位置到真实位置，防止偏移累积"""
-        self.logical_pos = self.get_real_cursor_pos()
+        real_pos = self.get_real_cursor_pos()
+        if real_pos:
+            self.logical_pos = real_pos
 
     def calculate_relative_move(self, target_x: int, target_y: int) -> Tuple[int, int]:
         """

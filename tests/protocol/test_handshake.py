@@ -1,5 +1,6 @@
 import pytest
-from pynergy_client.pynergy_protocol import HelloBackMsg, HelloMsg
+
+from src.pynergy_client.pynergy_protocol import HelloBackMsg, HelloMsg
 
 
 class TestHelloMsg:
