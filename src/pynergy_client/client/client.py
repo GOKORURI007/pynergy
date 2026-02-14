@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from loguru import logger
 
 from ..pynergy_protocol import HelloBackMsg, HelloMsg, MsgID, PynergyParser
-from .protocols import ClientProtocol, ClientState
+from .protocols import ClientProtocol, ClientState, DispatcherProtocol
 
 if TYPE_CHECKING:
     from .dispatcher import MessageDispatcher
@@ -27,7 +27,6 @@ class PynergyClient(ClientProtocol):
         server: str,
         port: int = 24800,
         client_name: str = 'Pynergy',
-        abs_mouse_move: bool = True,
         *,
         parser: PynergyParser,
         dispatcher: 'MessageDispatcher',
@@ -42,7 +41,6 @@ class PynergyClient(ClientProtocol):
         self.server: str = server
         self.port: int = port
         self.name: str = client_name
-        self.abs_mouse_move: bool = abs_mouse_move
 
         self.state: ClientState = ClientState.DISCONNECTED
         self.listen_task = None
@@ -52,7 +50,7 @@ class PynergyClient(ClientProtocol):
         self.writer = None
 
         self.parser: PynergyParser = parser
-        self.dispatcher: 'MessageDispatcher' = dispatcher
+        self.dispatcher: DispatcherProtocol = dispatcher
 
     async def _connect(self) -> None:
         """连接 Deskflow 服务器并进行握手"""
@@ -66,6 +64,7 @@ class PynergyClient(ClientProtocol):
         data = await self.reader.read(1024)
         self.parser.feed(data)
         msg: HelloMsg | None = self.parser.next_handshake_msg(MsgID.Hello)
+        assert msg, '未收到服务器 Hello 消息'
         logger.debug(f'服务器协议: {msg.protocol_name} {msg.major}.{msg.minor}')
 
         # 3. 发送 HelloBack (异步写入)
@@ -80,10 +79,10 @@ class PynergyClient(ClientProtocol):
     async def run(self) -> None:
         """运行主事件循环"""
         await self._connect()
-
         self.running = True
 
         try:
+            assert self.reader, '未初始化 reader'
             while self.running:
                 # 这里的 read 也是非阻塞的
                 data = await self.reader.read(4096)

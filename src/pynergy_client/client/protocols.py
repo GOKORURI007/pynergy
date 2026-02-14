@@ -1,9 +1,12 @@
 import asyncio
 from dataclasses import dataclass
 from enum import Enum
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from ..pynergy_protocol import MsgBase, PynergyParser
+
+if TYPE_CHECKING:
+    from ..client.handlers import PynergyHandler
 
 
 class ClientState(Enum):
@@ -21,7 +24,6 @@ class ClientProtocol(Protocol):
     server: str
     port: int
     name: str
-    abs_mouse_move: bool
 
     state: ClientState
     listen_task: asyncio.Task | None
@@ -56,6 +58,7 @@ class MessageTask:
 
 
 class DispatcherProtocol(Protocol):
+    handler: 'PynergyHandler'
     queue: asyncio.Queue[MessageTask]
 
     async def enqueue(self, msg: MsgBase, client: ClientProtocol): ...

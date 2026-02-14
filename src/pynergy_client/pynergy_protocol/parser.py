@@ -7,7 +7,7 @@ from .core import MsgBase, Registry
 from .protocol_types import MsgID
 
 
-class PynergyParser:
+class PynergyParser[T: MsgBase]:
     def __init__(self):
         self._buffer = bytearray()
 
@@ -77,7 +77,7 @@ class PynergyParser:
             if len(self._buffer) >= total_packet_size:
                 del self._buffer[:total_packet_size]
 
-    def next_msg(self) -> MsgBase | None:
+    def next_msg(self) -> T | None:
         """
         尝试解析并返回一个普通消息对象。
         """
@@ -89,7 +89,7 @@ class PynergyParser:
 
         return self._parse_packet(get_class)
 
-    def next_handshake_msg(self, msg_type: Literal[MsgID.Hello, MsgID.HelloBack]) -> MsgBase | None:
+    def next_handshake_msg(self, msg_type: Literal[MsgID.Hello, MsgID.HelloBack]) -> T | None:
         """
         尝试解析并返回一个 Handshake 消息对象。
         """

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from loguru import logger
 
+from .. import config
 from ..device import BaseDeviceContext, BaseKeyboardVirtualDevice, BaseMouseVirtualDevice
 
 if TYPE_CHECKING:
@@ -56,16 +57,19 @@ class PynergyHandler:
 
     def __init__(
         self,
+        cfg: config.Config,
         context: BaseDeviceContext,
         mouse_device: BaseMouseVirtualDevice,
         keyboard_device: BaseKeyboardVirtualDevice,
     ):
+        self.cfg = cfg
         self.ctx = context
         self.mouse = mouse_device
         self.keyboard = keyboard_device
 
         self.last_mouse_time = 0
-        self.interval = 0.008  # 约 125Hz，可以平衡平滑度和性能
+        self.interval = cfg.mouse_move_threshold / 1000  # 约 125Hz，可以平衡平滑度和性能
+        self.mouse_pos_sync_freq = cfg.mouse_pos_sync_freq
         self.move_count = 0
         self._pending_pos = None
 
@@ -170,20 +174,22 @@ class PynergyHandler:
     async def on_dmmv(self, msg: DMouseMoveMsg, client: 'PynergyClient'):
         logger.debug(f'Handle {msg}')
         now = time.perf_counter()
-        # 如果距离上次发送时间太短，只记录坐标，不触发移动
+
         if now - self.last_mouse_time < self.interval:
+            # 也许会有鼠标需要去抖？移动一定距离再发送
             # self._pending_pos = (msg.x, msg.y)
             return
-        self.move_count += 1
-        if self.move_count >= 2:
-            self.mouse.move_absolute(msg.x, msg.y)
-            self.mouse.syn()
-            self.move_count = 0
-            return
-        if client.abs_mouse_move:
+
+        if self.cfg.abs_mouse_move:
             self.mouse.move_absolute(msg.x, msg.y)
             self.mouse.syn()
         else:
+            self.move_count += 1
+            if self.move_count >= self.mouse_pos_sync_freq:
+                self.mouse.move_absolute(msg.x, msg.y)
+                self.mouse.syn()
+                self.move_count = 0
+                return
             dx, dy = self.ctx.calculate_relative_move(msg.x, msg.y)
             if dx != 0 or dy != 0:
                 self.mouse.move_relative(dx, dy)

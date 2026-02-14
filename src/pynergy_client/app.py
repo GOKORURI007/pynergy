@@ -136,18 +136,18 @@ async def run_app(cfg: Config):
     logger.info(f'日志记录器已初始化: {cfg.log_dir}/{cfg.log_file}')
 
     device_ctx, mouse, keyboard = init_backend(cfg)
+    assert device_ctx and mouse and keyboard
     if not cfg.screen_width or not cfg.screen_height:
         device_ctx.update_screen_info()
         logger.info(f'自动获取屏幕尺寸: {device_ctx.screen_size[0]}x{device_ctx.screen_size[1]}')
 
-    handler = PynergyHandler(device_ctx, mouse, keyboard)
+    handler = PynergyHandler(cfg, device_ctx, mouse, keyboard)
     dispatcher = MessageDispatcher(handler)
     parser = PynergyParser()
     client = PynergyClient(
         server=cfg.server,
         port=cfg.port,
         client_name=cfg.client_name,
-        abs_mouse_move=cfg.abs_mouse_move,
         parser=parser,
         dispatcher=dispatcher,
     )

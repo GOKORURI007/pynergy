@@ -22,12 +22,17 @@ class Config:
     server: str = '127.0.0.1'
     port: int = 24800
     client_name: str = 'Pynergy'
-    abs_mouse_move: bool = True
-    screen_width: int = None
-    screen_height: int = None
+    screen_width: int | None = None
+    screen_height: int | None = None
     mouse_backend: Available_Backends | None = None
     keyboard_backend: Available_Backends | None = None
-    # 日志名称
+
+    # --- Handler ---
+    abs_mouse_move: bool = False
+    mouse_move_threshold: int = 8  # 单位 ms，约 125Hz，可以平衡平滑度和性能
+    mouse_pos_sync_freq: int = 2  # 同步频率，每移动 n 次与系统同步鼠标真实位置
+
+    # --- Logger ---
     logger_name: str = 'Pynergy'
     # 日志文件夹
     log_dir: Path = user_log_path(appname='pynergy', appauthor=False)
