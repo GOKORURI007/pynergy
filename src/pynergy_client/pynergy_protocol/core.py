@@ -1,8 +1,11 @@
 import struct
 from dataclasses import dataclass, fields
+from types import NoneType
 from typing import (
     Annotated,
+    ClassVar,
     Literal,
+    Self,
     TypeAlias,
     TypeVar,
     get_args,
@@ -20,12 +23,12 @@ T = TypeVar('T', bound='MsgBase')
 
 
 @dataclass(slots=True)
-class MsgBase:
+class MsgBase[T]:
     """消息基类"""
 
-    _INSTRUCTIONS = None
-    _FORMAT = ''
-    CODE = ''
+    _INSTRUCTIONS: ClassVar[InstructionType | NoneType] = None
+    _FORMAT: ClassVar[str] = ''
+    CODE: ClassVar[str] = ''
 
     def __init_subclass__(cls: T, **kwargs):
         # 防止 dataclass(slots=True) 重建类时重复执行
@@ -65,17 +68,20 @@ class MsgBase:
                     f'Got {type(hint)} instead.'
                 )
 
-        cls._FORMAT = ''.join(fmt_parts)
-        cls._INSTRUCTIONS = instructions
-        cls._format_initialized = True
+        setattr(cls, '_FORMAT', ''.join(fmt_parts))
+        setattr(cls, '_INSTRUCTIONS', instructions)
+        setattr(cls, '_format_initialized', True)
 
     @classmethod
-    def unpack(cls: T, data: bytes) -> T:
+    def unpack(cls, data: bytes) -> Self:
         try:
             logger.trace(f'开始解包 {cls.__name__}: 数据长度={len(data)} 字节')
             data = cls.before_unpack(data)
             offset = 0
             args = []
+
+            if cls._INSTRUCTIONS is None:
+                raise ValueError(f'指令集未初始化：{cls.__name__}')
 
             for i, (op, size, fmt) in enumerate(cls._INSTRUCTIONS):
                 if offset >= len(data):
@@ -147,6 +153,9 @@ class MsgBase:
             data_fields = [
                 f for f in fields(self) if not f.name.startswith('_') and f.name != 'CODE'
             ]
+
+            if self._INSTRUCTIONS is None:
+                raise ValueError('指令列表未定义')
 
             if len(data_fields) != len(self._INSTRUCTIONS):
                 raise ValueError(
@@ -223,8 +232,8 @@ class MsgBase:
         """在解包前执行"""
         return data[4:]
 
-    @staticmethod
-    def after_unpack(result: T) -> T:
+    @classmethod
+    def after_unpack(cls, result: Self) -> Self:
         """在解包后执行"""
         return result
 

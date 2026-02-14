@@ -503,8 +503,9 @@ class DSetOptionsMsg(MsgBase):
 
     paris: UInt32
 
-    @classmethod
-    def unpack(cls, data: bytes): ...
+    # TODO: Implement unpack method
+    # @classmethod
+    # def unpack(cls, data: bytes): ...
 
 
 @Registry.register(MsgID.DDRG)
@@ -531,8 +532,9 @@ class DDragInfoMsg(MsgBase):
 
     file_counts: UInt16
 
-    @classmethod
-    def unpack(cls, data: bytes): ...
+    # TODO: Implement unpack method
+    # @classmethod
+    # def unpack(cls, data: bytes): ...
 
 
 @Registry.register(MsgID.DFTR)
@@ -567,8 +569,9 @@ class DFileTransferMsg(MsgBase):
 
     mark: UInt8
 
-    @classmethod
-    def unpack(cls, data: bytes): ...
+    # TODO: Implement unpack method
+    # @classmethod
+    # def unpack(cls, data: bytes): ...
 
 
 @Registry.register(MsgID.LSYN)
