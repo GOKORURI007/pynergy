@@ -13,7 +13,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 VERSION_FILE = PROJECT_ROOT / 'pyproject.toml'
 
 EXTRA_VERSION_FILES: list[tuple[Path, str, int]] = [
-    (VERSION_FILE / 'flake.nix', r'version\s*=\s*["\']([^"\']+)["\']', 1),
+    (PROJECT_ROOT / 'flake.nix', r'version\s*=\s*["\']([^"\']+)["\']', 1),
 ]
 
 # --------------
