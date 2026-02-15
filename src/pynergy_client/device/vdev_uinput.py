@@ -86,7 +86,7 @@ class UInputMouseDevice(BaseMouseVirtualDevice):
         self._ui.write(e.EV_KEY, button_id, value)
 
     def release_all_button(self) -> None:
-        for button_id in self.pressed_btns:
+        for button_id in list(self.pressed_btns):
             self.send_button(button_id, False)
 
     def syn(self) -> None:
@@ -136,7 +136,7 @@ class UInputKeyboardDevice(BaseKeyboardVirtualDevice):
         self._ui.write(e.EV_KEY, key_code, value)
 
     def release_all_key(self) -> None:
-        for key_code in self.pressed_keys:
+        for key_code in list(self.pressed_keys):
             self.send_key(key_code, False)
 
     def sync_modifiers(self, modifiers: int) -> None:

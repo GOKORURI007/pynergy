@@ -73,7 +73,7 @@ class PynergyHandler:
         self._flush_task: asyncio.TimerHandle | None = None
         self._last_mouse_time = 0
         self._move_count = 0
-        self._pending_pos = None
+        self._pending_pos: tuple[int, int] | None = None
 
     @staticmethod
     async def default_handler(msg, client=None):
@@ -101,14 +101,19 @@ class PynergyHandler:
         client.running = False
 
     async def on_cinn(self, msg: CEnterMsg, client: 'PynergyClient'):
+        if client.state != ClientState.CONNECTED:
+            logger.warning(f'忽略消息 {msg}，当前状态: {client.state}')
+            return None
         logger.debug(f'Handle {msg}')
         logger.info(f'进入屏幕，位置: ({msg.entry_x}, {msg.entry_y})')
-        self.mouse.move_absolute(msg.entry_x, msg.entry_y)
-        self.ctx.logical_pos = (msg.entry_x, msg.entry_y)
+        self.mouse.move_absolute(msg.entry_x + 1, msg.entry_y + 1)
+        self.ctx.logical_pos = (msg.entry_x + 1, msg.entry_y + 1)
         client.state = ClientState.ACTIVE
 
         modifiers = msg.mod_key_mask
         self.keyboard.sync_modifiers(modifiers)
+        self.keyboard.syn()
+        self.mouse.syn()
 
     @staticmethod
     async def on_ciak(msg: MsgBase, client=None):
@@ -120,10 +125,17 @@ class PynergyHandler:
         await client.send_message(msg.pack_for_socket())
 
     async def on_cout(self, msg: MsgBase, client: 'PynergyClient'):
+        if client.state != ClientState.ACTIVE:
+            logger.warning(f'忽略消息 {msg}，当前状态: {client.state}')
+            return None
         logger.debug(f'Handle {msg}')
         client.state = ClientState.CONNECTED
         self.keyboard.release_all_key()
         self.mouse.release_all_button()
+        self._flush_task.cancel()
+        self._flush_task = None
+        self.keyboard.syn()
+        self.mouse.syn()
 
     @staticmethod
     async def on_cnop(msg: MsgBase, client=None):
@@ -186,7 +198,7 @@ class PynergyHandler:
             self._pending_pos = (msg.x, msg.y)
             # 启动延迟补齐：如果后续没动作，50ms 后强行刷入这一帧
             self._flush_task = asyncio.get_event_loop().call_later(
-                0.05, lambda: asyncio.create_task(self._flush_pending_move())
+                0.25, lambda: asyncio.create_task(self._flush_pending_move())
             )
             return
 
