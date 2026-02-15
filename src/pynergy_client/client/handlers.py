@@ -1,4 +1,3 @@
-import asyncio
 import time
 from functools import wraps
 from typing import TYPE_CHECKING
@@ -63,17 +62,16 @@ class PynergyHandler:
         mouse_device: BaseMouseVirtualDevice,
         keyboard_device: BaseKeyboardVirtualDevice,
     ):
+        self.cfg = cfg
         self.ctx = context
         self.mouse = mouse_device
         self.keyboard = keyboard_device
-        self.abs_mouse_move = cfg.abs_mouse_move
-        self.interval = cfg.mouse_move_threshold / 1000
-        self.mouse_pos_sync_freq = cfg.mouse_pos_sync_freq
 
-        self._flush_task: asyncio.TimerHandle | None = None
-        self._last_mouse_time = 0
-        self._move_count = 0
-        self._pending_pos: tuple[int, int] | None = None
+        self.last_mouse_time = 0
+        self.interval = cfg.mouse_move_threshold / 1000  # 约 125Hz，可以平衡平滑度和性能
+        self.mouse_pos_sync_freq = cfg.mouse_pos_sync_freq
+        self.move_count = 0
+        self._pending_pos = None
 
     @staticmethod
     async def default_handler(msg, client=None):
@@ -101,19 +99,14 @@ class PynergyHandler:
         client.running = False
 
     async def on_cinn(self, msg: CEnterMsg, client: 'PynergyClient'):
-        if client.state != ClientState.CONNECTED:
-            logger.warning(f'忽略消息 {msg}，当前状态: {client.state}')
-            return None
         logger.debug(f'Handle {msg}')
         logger.info(f'进入屏幕，位置: ({msg.entry_x}, {msg.entry_y})')
-        self.mouse.move_absolute(msg.entry_x + 1, msg.entry_y + 1)
-        self.ctx.logical_pos = (msg.entry_x + 1, msg.entry_y + 1)
+        self.mouse.move_absolute(msg.entry_x, msg.entry_y)
+        self.ctx.logical_pos = (msg.entry_x, msg.entry_y)
         client.state = ClientState.ACTIVE
 
         modifiers = msg.mod_key_mask
         self.keyboard.sync_modifiers(modifiers)
-        self.keyboard.syn()
-        self.mouse.syn()
 
     @staticmethod
     async def on_ciak(msg: MsgBase, client=None):
@@ -125,17 +118,10 @@ class PynergyHandler:
         await client.send_message(msg.pack_for_socket())
 
     async def on_cout(self, msg: MsgBase, client: 'PynergyClient'):
-        if client.state != ClientState.ACTIVE:
-            logger.warning(f'忽略消息 {msg}，当前状态: {client.state}')
-            return None
         logger.debug(f'Handle {msg}')
         client.state = ClientState.CONNECTED
         self.keyboard.release_all_key()
         self.mouse.release_all_button()
-        self._flush_task.cancel()
-        self._flush_task = None
-        self.keyboard.syn()
-        self.mouse.syn()
 
     @staticmethod
     async def on_cnop(msg: MsgBase, client=None):
@@ -189,50 +175,30 @@ class PynergyHandler:
         logger.trace(f'Handle {msg}')
         now = time.perf_counter()
 
-        # 1. 取消现有的补齐定时器（因为有了新移动）
-        if self._flush_task:
-            self._flush_task.cancel()
-            self._flush_task = None
-
-        if now - self._last_mouse_time < self.interval:
-            self._pending_pos = (msg.x, msg.y)
-            # 启动延迟补齐：如果后续没动作，50ms 后强行刷入这一帧
-            self._flush_task = asyncio.get_event_loop().call_later(
-                0.25, lambda: asyncio.create_task(self._flush_pending_move())
-            )
+        if now - self.last_mouse_time < self.interval:
+            # 也许会有鼠标需要去抖？移动一定距离再发送
+            # self._pending_pos = (msg.x, msg.y)
             return
 
-        if self.abs_mouse_move:
+        if self.cfg.abs_mouse_move:
             self.mouse.move_absolute(msg.x, msg.y)
             self.mouse.syn()
-            self._last_mouse_time = time.perf_counter()
-            self._pending_pos = None
         else:
-            self._move_count += 1
-            if self._move_count >= self.mouse_pos_sync_freq:
+            self.move_count += 1
+            if self.move_count >= self.mouse_pos_sync_freq:
                 self.mouse.move_absolute(msg.x, msg.y)
                 self.mouse.syn()
-                self._move_count = 0
+                self.move_count = 0
                 return
             dx, dy = self.ctx.calculate_relative_move(msg.x, msg.y)
             if dx != 0 or dy != 0:
                 self.mouse.move_relative(dx, dy)
                 self.mouse.syn()
 
-    async def _flush_pending_move(self):
-        """延迟补齐逻辑：强制刷入最后一帧"""
-        if self._pending_pos:
-            x, y = self._pending_pos
-            logger.trace(f'Flushing pending move to {x}, {y}')
-            self.mouse.move_absolute(x, y)
-            self.mouse.syn()
-            self._last_mouse_time = time.perf_counter()
-            self._pending_pos = None
-
+    @device_check
     async def on_dmrm(self, msg: DMouseRelMoveMsg, client: 'PynergyClient'):
         logger.trace(f'Handle {msg}')
         self.mouse.move_relative(msg.dx, msg.dy)
-        self.mouse.syn()
 
     @device_check
     async def on_dmup(self, msg: DMouseUpMsg, client: 'PynergyClient'):
