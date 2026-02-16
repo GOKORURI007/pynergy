@@ -3,7 +3,7 @@ import json
 import sys
 from dataclasses import fields, replace
 from pathlib import Path
-from typing import Annotated, get_args
+from typing import Annotated
 
 import typer
 from loguru import logger
@@ -20,14 +20,6 @@ from .utils import init_backend, init_logger
 app = typer.Typer(help=_('Pynergy Client'), add_completion=True)
 
 
-def get_backend_help_text(device_type: str):
-    options = ', '.join(get_args(Available_Backends))
-
-    return _('{device_type} backend. Available: {options}').format(
-        device_type=device_type, options=options
-    )
-
-
 @app.command()
 def main(
     config: Annotated[
@@ -37,10 +29,10 @@ def main(
     port: Annotated[int | None, typer.Option(help=_('Port number'))] = None,
     client_name: Annotated[str | None, typer.Option(help=_('Client name'))] = None,
     mouse_backend: Annotated[
-        Available_Backends | None, typer.Option(help=_(get_backend_help_text('Mouse')))
+        Available_Backends | None, typer.Option(help=_('Mouse backend'))
     ] = None,
     keyboard_backend: Annotated[
-        Available_Backends | None, typer.Option(help=_(get_backend_help_text('Keyboard')))
+        Available_Backends | None, typer.Option(help=_('Keyboard backend'))
     ] = None,
     screen_width: Annotated[int | None, typer.Option(help=_('Screen width'))] = None,
     screen_height: Annotated[int | None, typer.Option(help=_('Screen height'))] = None,
