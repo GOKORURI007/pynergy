@@ -61,11 +61,11 @@ def main(
     log_level_stdout: Annotated[LogLevel | None, typer.Option(help=_('Console log level'))] = None,
 ):
     """
-    启动 Pynergy 客户端，支持通过命令行参数覆盖 JSON 配置。
-    优先级为 cli > config_file > default
+    Launch the Pynergy client, which supports overriding JSON configurations via command-line arguments.
+    The priority is CLI > config_file > default
     """
 
-    # 1. 加载 JSON 配置文件
+    # 1. Load the JSON configuration file
     if not config.exists():
         config.parent.mkdir(parents=True, exist_ok=True)
         config.write_text('{}', encoding='utf-8')
@@ -76,20 +76,20 @@ def main(
     except json.JSONDecodeError:
         json_dict = {}
 
-    # 2. 实例化基础配置 (过滤无效字段)
+    # 2. Instantiate base configuration (filter invalid fields)
     valid_fields = {f.name for f in fields(Config)}
     filtered_json = {k: v for k, v in json_dict.items() if k in valid_fields}
     cfg = Config(**filtered_json)
 
-    # 3. 收集 CLI 传入的参数 (即 locals() 中不为 None 的部分 )
-    # 排除掉非 Config 字段的参数，如 config_file
+    # 3. Collect the parameters passed in by the CLI (i.e. the non-non-none) part of locals())
+    # Exclude parameters that are not Config fields, such as config_file
     cli_args = locals()
     overrides = {k: cli_args[k] for k in valid_fields if k in cli_args and cli_args[k] is not None}
 
-    # 执行覆盖
+    # Override config
     cfg = replace(cfg, **overrides)
 
-    # 4. 运行应用
+    # 4. Run app
     try:
         asyncio.run(run_app(cfg))
     except KeyboardInterrupt:
@@ -117,11 +117,11 @@ async def run_app(cfg: Config):
         dispatcher=dispatcher,
     )
 
-    # 1. 启动 Worker
-    # 它会一直运行，等待队列里的消息
+    # 1. Start the Worker
+    # It will run all the time, waiting for a message in the queue
     worker_task = asyncio.create_task(dispatcher.worker(0))
 
-    # 2. 启动 Client 监听
+    # 2. Start Client listening
     client.listen_task = asyncio.create_task(client.run())
 
     try:
@@ -134,6 +134,6 @@ async def run_app(cfg: Config):
         logger.error(f'客户端错误: {e}')
         sys.exit(1)
     finally:
-        # 3. 停止所有任务
+        # 3. Stop all missions
         await client.stop()
         worker_task.cancel()
