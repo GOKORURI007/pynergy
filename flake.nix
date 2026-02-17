@@ -16,7 +16,7 @@
 
       pynergy-protocol = python.pkgs.buildPythonPackage {
         pname = "pynergy-protocol";
-        version = "0.1.0";
+        version = "0.1.5";
         src = ./packages/pynergy_protocol;
         format = "pyproject";
         nativeBuildInputs = with python.pkgs; [ hatchling ];
@@ -55,9 +55,10 @@
         ];
 
         # 使用 postFixup 在构建最后阶段“注入”环境变量
-postFixup = ''
+        postFixup = ''
           if [ -e "$out/bin/pynergy-client" ]; then
             wrapProgram $out/bin/pynergy-client \
+              --set APP_VERSION "${pynergy-client.version}" \
               --set C_INCLUDE_PATH "${pkgs.linuxHeaders}/include:${pkgs.libevdev}/include/libevdev-1.0" \
               --set LIBRARY_PATH "${pkgs.libevdev}/lib" \
               --prefix LD_LIBRARY_PATH : "${pkgs.libevdev}/lib:${pkgs.libxkbcommon}/lib"

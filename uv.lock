@@ -420,14 +420,12 @@ wheels = [
 name = "pynergy"
 version = "0.1.5"
 source = { virtual = "." }
-dependencies = [
-    { name = "pyinstaller" },
-]
 
 [package.dev-dependencies]
 dev = [
     { name = "babel" },
     { name = "gitpython" },
+    { name = "pyinstaller" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-dependency" },
@@ -438,12 +436,12 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pyinstaller", specifier = ">=6.19.0" }]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "babel", specifier = ">=2.18.0" },
     { name = "gitpython", specifier = ">=3.1.46" },
+    { name = "pyinstaller", specifier = ">=6.19.0" },
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-dependency", specifier = ">=0.6.0" },

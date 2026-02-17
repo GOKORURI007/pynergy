@@ -10,8 +10,9 @@ import typer
 from click.core import ParameterSource
 from loguru import logger
 from platformdirs import user_config_path, user_log_path
-from pynergy_protocol import PynergyParser
 
+from pynergy_protocol import PynergyParser
+from . import __version__
 from .client.client import PynergyClient
 from .client.dispatcher import MessageDispatcher
 from .client.handlers import PynergyHandler
@@ -20,6 +21,13 @@ from .i18n import _
 from .utils import init_backend, init_logger
 
 app = typer.Typer(help=_('Pynergy Client'), add_completion=True)
+
+
+def version_callback(value: bool):
+    if value:
+        # 这里可以直接 print，或者使用 typer.echo
+        typer.echo(f"Pynergy Client Version: {__version__}")
+        raise typer.Exit()
 
 
 @app.command()
@@ -63,6 +71,15 @@ def main(
     log_level_stdout: Annotated[
         LogLevel | None, typer.Option(help=_('Console log level'))
     ] = 'INFO',
+    version: Annotated[
+        bool | None,
+        typer.Option(
+            "--version", "-v",
+            help=_("Show the version and exit."),
+            callback=version_callback,
+            is_eager=True,  # 确保在其他参数处理之前运行
+        ),
+    ] = None,
 ):
     """
     Launch the Pynergy client, which supports overriding JSON configurations via command-line arguments.

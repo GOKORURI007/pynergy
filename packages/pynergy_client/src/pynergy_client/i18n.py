@@ -1,6 +1,7 @@
 import gettext
 import locale
 import os
+import sys
 from pathlib import Path
 
 
@@ -12,7 +13,10 @@ def _get_translator():
 
     # 2. Locate locales directory relative to current file
     # Structure: pynergy_client/locales/zh_CN/LC_MESSAGES/pynergy.mo
-    locale_dir = Path(__file__).parent.resolve() / 'locales'
+    if getattr(sys, 'frozen', False):
+        locale_dir = Path(sys._MEIPASS) / 'pynergy_client' / 'locales'
+    else:
+        locale_dir = Path(__file__).parent.resolve() / 'locales'
 
     # 3. Load translation object
     # Note: domain must match the DOMAIN in the script

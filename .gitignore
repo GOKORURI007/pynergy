@@ -2,6 +2,9 @@
 **/*.egg-info/
 **/htmlcov/
 **/logs/
+**/result/
+**/dist/
+**/build/
 .venv/
 .idea/
 .direnv/

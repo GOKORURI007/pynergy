@@ -3,9 +3,7 @@ name = "pynergy"
 version = "0.1.5"
 description = "Pynergy monorepo workspace"
 requires-python = ">=3.13"
-dependencies = [
-    "pyinstaller>=6.19.0",
-]
+dependencies = []
 
 [dependency-groups]
 dev = [
@@ -15,6 +13,7 @@ dev = [
     "pytest-cov>=7.0.0",
     "pytest-dependency>=0.6.0",
     "pytest-sugar>=1.1.1",
+    "pyinstaller>=6.19.0",
     "questionary>=2.1.1",
     "ruff>=0.14.14",
     "semver>=3.0.4",
