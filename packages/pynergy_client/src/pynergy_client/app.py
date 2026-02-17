@@ -14,7 +14,7 @@ from .client.dispatcher import MessageDispatcher
 from .client.handlers import PynergyHandler
 from .config import Available_Backends, Config, LogLevel
 from .i18n import _
-from .pynergy_protocol import PynergyParser
+from pynergy_protocol import PynergyParser
 from .utils import init_backend, init_logger
 
 app = typer.Typer(help=_('Pynergy Client'), add_completion=True)

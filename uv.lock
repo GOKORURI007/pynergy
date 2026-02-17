@@ -2,6 +2,13 @@ version = 1
 revision = 3
 requires-python = ">=3.13"
 
+[manifest]
+members = [
+    "pynergy",
+    "pynergy-client",
+    "pynergy-protocol",
+]
+
 [[package]]
 name = "annotated-doc"
 version = "0.0.4"
@@ -232,18 +239,9 @@ wheels = [
 ]
 
 [[package]]
-name = "pynergy-client"
+name = "pynergy"
 version = "0.1.5"
 source = { virtual = "." }
-dependencies = [
-    { name = "evdev", marker = "sys_platform == 'linux'" },
-    { name = "loguru" },
-    { name = "platformdirs" },
-    { name = "pynput" },
-    { name = "python-xlib" },
-    { name = "toml" },
-    { name = "typer" },
-]
 
 [package.dev-dependencies]
 dev = [
@@ -259,15 +257,6 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "evdev", marker = "sys_platform == 'linux'", specifier = ">=1.9.2" },
-    { name = "loguru", specifier = ">=0.7.3" },
-    { name = "platformdirs", specifier = ">=4.5.0" },
-    { name = "pynput", specifier = ">=1.8.1" },
-    { name = "python-xlib", specifier = ">=0.33" },
-    { name = "toml", specifier = ">=0.10.2" },
-    { name = "typer", specifier = ">=0.23.1" },
-]
 
 [package.metadata.requires-dev]
 dev = [
@@ -281,6 +270,42 @@ dev = [
     { name = "ruff", specifier = ">=0.14.14" },
     { name = "semver", specifier = ">=3.0.4" },
 ]
+
+[[package]]
+name = "pynergy-client"
+version = "0.1.5"
+source = { editable = "packages/pynergy_client" }
+dependencies = [
+    { name = "evdev", marker = "sys_platform == 'linux'" },
+    { name = "loguru" },
+    { name = "platformdirs" },
+    { name = "pynergy-protocol" },
+    { name = "pynput" },
+    { name = "toml" },
+    { name = "typer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "evdev", marker = "sys_platform == 'linux'", specifier = ">=1.9.2" },
+    { name = "loguru", specifier = ">=0.7.3" },
+    { name = "platformdirs", specifier = ">=4.5.0" },
+    { name = "pynergy-protocol", editable = "packages/pynergy_protocol" },
+    { name = "pynput" },
+    { name = "toml", specifier = ">=0.10.2" },
+    { name = "typer", specifier = ">=0.23.1" },
+]
+
+[[package]]
+name = "pynergy-protocol"
+version = "0.1.5"
+source = { editable = "packages/pynergy_protocol" }
+dependencies = [
+    { name = "loguru" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "loguru", specifier = ">=0.7.3" }]
 
 [[package]]
 name = "pynput"

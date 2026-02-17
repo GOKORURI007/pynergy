@@ -24,14 +24,14 @@ T = TypeVar('T', bound='MsgBase')
 
 @dataclass(slots=True)
 class MsgBase[T]:
-    """消息基类"""
+    """Message base class"""
 
     _INSTRUCTIONS: ClassVar[InstructionType | NoneType] = None
     _FORMAT: ClassVar[str] = ''
     CODE: ClassVar[str] = ''
 
     def __init_subclass__(cls: T, **kwargs):
-        # 防止 dataclass(slots=True) 重建类时重复执行
+        # Prevent dataclass(slots=True) from repeatedly executing when rebuilding a class
         if '_format_initialized' in cls.__dict__:
             return
         # --- compile format ---
@@ -47,11 +47,11 @@ class MsgBase[T]:
                 metadata = get_args(hint)
                 struct_char = metadata[1]
 
-                # 判定操作类型
+                # Determine the type of operation
                 op: OpCode
                 if struct_char == 'Is':
                     op = 'VAR_STR'
-                    size = 4  # 仅长度前缀的大小
+                    size = 4  # Size of the length prefix only
                 elif 's' in struct_char:
                     op = 'FIX_STR'
                     size = struct.calcsize(struct_char)
@@ -75,110 +75,129 @@ class MsgBase[T]:
     @classmethod
     def unpack(cls, data: bytes) -> Self:
         try:
-            logger.trace(f'开始解包 {cls.__name__}: 数据长度={len(data)} 字节')
+            logger.trace(f'Unpacking {cls.__name__}: data length={len(data)} bytes')
             data = cls.before_unpack(data)
             offset = 0
             args = []
 
             if cls._INSTRUCTIONS is None:
-                raise ValueError(f'指令集未初始化：{cls.__name__}')
+                raise ValueError(f'Instruction set not initialized: {cls.__name__}')
 
             for i, (op, size, fmt) in enumerate(cls._INSTRUCTIONS):
                 if offset >= len(data):
-                    raise ValueError(f'数据不足：在指令 {i} ({op}) 处超出范围')
+                    raise ValueError(f'Insufficient data: Out of range at directive {i} ({op}).')
 
                 try:
                     if op == 'FIX_VAL':
-                        # 直接解包数值
+                        # Unpack the value directly
                         val = struct.unpack_from(f'>{fmt}', data, offset)[0]
                         args.append(val)
                         offset += size
-                        logger.trace(f'解包固定值: 格式={fmt}, 值={val}, 新偏移={offset}')
+                        logger.trace(
+                            f'Unpack fixed values: format={fmt}, value={val}, new offset={offset}'
+                        )
 
                     elif op == 'FIX_STR':
-                        # 解包固定长度字符串并 strip
+                        # Unwrap fixed-length strings and strip
                         raw_val = struct.unpack_from(f'>{fmt}', data, offset)[0]
                         val = raw_val.decode().rstrip('\x00')
                         args.append(val)
                         offset += size
-                        logger.trace(f"解包固定字符串: 格式={fmt}, 值='{val}', 新偏移={offset}")
+                        logger.trace(
+                            f'Unpack fixed string: format={fmt}, value={val}, new offset={offset}'
+                        )
 
                     elif op == 'VAR_STR':
-                        # 解包变长字符串：先读 4 字节长度
+                        # Unpack a lengthened string: Read 4 bytes of length first
                         if offset + 4 > len(data):
-                            raise ValueError('变长字符串长度信息不完整')
+                            raise ValueError('The length of the variable string is incomplete')
 
                         length = struct.unpack_from('>I', data, offset)[0]
                         offset += size
 
                         if offset + length > len(data):
                             raise ValueError(
-                                f'变长字符串数据不完整：声明长度={length}, 可用数据={len(data) - offset}'
+                                f'Variable length string data is incomplete: '
+                                f'declared length={length}, available data={len(data) - offset}'
                             )
 
-                        val = data[offset : offset + length].decode()
+                        val = data[offset: offset + length].decode()
                         args.append(val)
                         offset += length
-                        logger.debug(f"解包变长字符串: 长度={length}, 值='{val}', 新偏移={offset}")
+                        logger.debug(
+                            f'Unpack Lengthy String: '
+                            f'length={length}, value={val}, new offset={offset}'
+                        )
 
                 except UnicodeDecodeError as e:
-                    raise ValueError(f'UTF-8 解码失败在指令 {i} ({op}): {e}') from e
+                    raise ValueError(f'UTF-8 decoding fails in directive {i} ({op}): {e}') from e
                 except struct.error as e:
-                    raise ValueError(f"结构体解包失败在指令 {i} ({op}), 格式='{fmt}': {e}") from e
+                    raise ValueError(
+                        f"Struct unpacking fails in directive {i} ({op}), format={fmt}: {e}"
+                    ) from e
 
             if offset < len(data):
-                logger.warning(f'解包后剩余 {len(data) - offset} 字节未处理的数据')
+                logger.warning(
+                    f'{len(data) - offset} bytes of unprocessed data remaining after unpacking'
+                )
 
             result = cls(*args)  # type: ignore[call-arg]
             result = cls.after_unpack(result)
-            logger.trace(f'成功解包 {cls.__name__}: {result}')
+            logger.trace(f'Successful unpacking {cls.__name__}: {result}')
             return result
 
         except Exception as e:
-            logger.error(f'解包 {cls.__name__} 失败: {e}', exc_info=True)
+            logger.error(f'Unpacking {cls.__name__} failed: {e}', exc_info=True)
             raise
 
     def pack(self) -> bytes:
-        """根据类定义的字段顺序和 _INSTRUCTIONS 动态打包"""
+        """
+        Dynamically Pack based on the order of fields defined by the class and _INSTRUCTIONS
+        """
         try:
-            logger.trace(f'开始打包 {self}')
+            logger.trace(f'Start packing {self}')
             self.before_pack()
             result = bytearray()
 
             code_bytes = struct.pack(f'>{len(self.CODE)}s', self.CODE.encode('utf-8'))
             result.extend(code_bytes)
-            logger.trace(f"打包消息代码: '{self.CODE}', 长度={len(code_bytes)}")
+            logger.trace(f'Pack message code: {self.CODE}, length={len(code_bytes)}')
 
-            # 获取 dataclass 定义的所有字段的值 (按定义顺序)
+            # Get the values of all fields defined by the dataclass (in order of definition)
             data_fields = [
                 f for f in fields(self) if not f.name.startswith('_') and f.name != 'CODE'
             ]
 
             if self._INSTRUCTIONS is None:
-                raise ValueError('指令列表未定义')
+                raise ValueError('Instruction list undefined')
 
             if len(data_fields) != len(self._INSTRUCTIONS):
                 raise ValueError(
-                    f'字段数量 ({len(data_fields)}) 与指令数量 ({len(self._INSTRUCTIONS)}) 不匹配'
+                    f'The number of fields ({len(data_fields)}) does not match '
+                    f'the number of instructions ({len(self._INSTRUCTIONS)}).'
                 )
 
-            # 将指令与字段值一一对应进行处理
+            # Process the instructions and field values one by one
             for i, ((op, size, fmt), field_def) in enumerate(zip(self._INSTRUCTIONS, data_fields)):
                 try:
                     val = getattr(self, field_def.name)
-                    logger.trace(f'处理字段 {field_def.name}: 值={val}, 操作={op}, 格式={fmt}')
+                    logger.trace(
+                        f'Process field {field_def.name}: value={val}, operation={op}, format={fmt}'
+                    )
 
                     if op == 'FIX_VAL':
-                        # 处理数值 (I, H, B 等)
+                        # Processing values (I, H, B, etc.)
                         packed_val = struct.pack(f'>{fmt}', val)
                         result.extend(packed_val)
-                        logger.trace(f'打包固定值: {val} -> {packed_val.hex()}')
+                        logger.trace(f'Packing fixed value: {val} -> {packed_val.hex()}')
 
                     elif op == 'FIX_STR':
-                        # 处理固定长度字符串，确保编码为 bytes 并填充 / 截断
+                        # Handle fixed-length strings, ensuring they are encoded as
+                        # bytes and pfilled/truncated
                         try:
                             s_bytes = val.encode('utf-8')
-                            # struct.pack 会自动根据 fmt ( 如 "7s") 处理截断和补 \x00
+                            # struct.pack automatically handles truncation and
+                            # completion \x00 based on FMT (e.g. "7s").
                             packed_str = struct.pack(f'>{fmt}', s_bytes)
                             result.extend(packed_str)
                             logger.trace(f"打包固定字符串: '{val}' -> {packed_str.hex()}")
@@ -186,64 +205,68 @@ class MsgBase[T]:
                             raise ValueError(f'编码字符串字段 {field_def.name} 失败: {e}') from e
 
                     elif op == 'VAR_STR':
-                        # 处理变长字符串 (Synergy 风格: Length + Data)
+                        # Handling Variable Strings (Synergy Style: Length + Data)
                         try:
                             s_bytes = val.encode('utf-8')
                             length = len(s_bytes)
-                            # 先打入 4 字节长度，再打入实际内容
+                            # Punch in 4 bytes before punching in the actual content
                             length_bytes = struct.pack('>I', length)
                             result.extend(length_bytes)
                             result.extend(s_bytes)
                             logger.trace(
-                                f"打包变长字符串: '{val}' (长度={length}) -> {length_bytes.hex()}{s_bytes.hex()}"
+                                f'Packing Long String: {val} '
+                                f'(length={length}) -> {length_bytes.hex()}{s_bytes.hex()}'
                             )
                         except UnicodeEncodeError as e:
                             raise ValueError(
-                                f'编码变长字符串字段 {field_def.name} 失败: {e}'
+                                f'Encoding a variable string field {field_def.name} fails: {e}'
                             ) from e
 
                 except struct.error as e:
                     raise ValueError(
-                        f"打包字段 {field_def.name} (指令 {i}) 失败，格式='{fmt}': {e}"
+                        f'Packing field {field_def.name} (directive {i}) '
+                        f'failed with format={fmt}: {e}'
                     ) from e
                 except Exception as e:
-                    logger.error(f'打包字段 {field_def.name} 时发生错误: {e}', exc_info=True)
+                    logger.error(f'Error with packaging field {field_def.name}: {e}', exc_info=True)
                     raise
 
             final_result = bytes(result)
             final_result = self.after_pack(final_result)
-            logger.trace(f'成功打包 {self.__class__.__name__}: 总长度={len(final_result)} 字节')
+            logger.trace(
+                f'Successfully packed {self.__class__.__name__}: '
+                f'total length={len(final_result)} bytes'
+            )
             return final_result
 
         except Exception as e:
-            logger.error(f'打包 {self.__class__.__name__} 失败: {e}', exc_info=True)
+            logger.error(f'Pack {self.__class__.__name__} failed: {e}', exc_info=True)
             raise
 
     def pack_for_socket(self) -> bytes:
         """
-        在消息体前追加 4 字节的长度前缀 (Big-endian)
+        Append a 4-byte length prefix (Big-endian) before the message body
         """
         payload = self.pack()
-        # '!I' 代表 Network byte order (Big-endian) unsigned int
         return struct.pack('>I', len(payload)) + payload
 
     @staticmethod
     def before_unpack(data: bytes) -> bytes:
-        """在解包前执行"""
+        """Execute before unpacking"""
         return data[4:]
 
     @classmethod
     def after_unpack(cls, result: Self) -> Self:
-        """在解包后执行"""
+        """Executed after unpacking"""
         return result
 
     def before_pack(self):
-        """在打包前执行"""
+        """Execute before packing"""
         pass
 
     @staticmethod
     def after_pack(result: bytes) -> bytes:
-        """在打包后执行"""
+        """Executed after packing"""
         return result
 
 
@@ -254,14 +277,16 @@ class Registry:
     def register(cls, msg_code: MsgID):
         def wrapper(subclass):
             if not issubclass(subclass, MsgBase):
-                raise TypeError(f'注册的类 {subclass.__name__} 必须继承自 MsgBase')
+                raise TypeError(
+                    f'The registered class {subclass.__name__} must inherit from MsgBase'
+                )
 
             if msg_code in cls._MAPPING:
-                logger.warning(f'消息类型 {msg_code} 已被注册，将被覆盖')
+                logger.warning(f'The message type {msg_code} is registered and will be overwritten')
 
             cls._MAPPING[msg_code] = subclass
             subclass.CODE = msg_code
-            logger.trace(f'注册消息类型: {msg_code} -> {subclass.__name__}')
+            logger.trace(f'Registration message type: {msg_code} -> {subclass.__name__}')
             return subclass
 
         return wrapper
@@ -269,19 +294,19 @@ class Registry:
     @classmethod
     def get_class(cls, msg_code: MsgID) -> type[MsgBase]:
         if msg_code not in cls._MAPPING:
-            logger.warning(f'未找到消息类型: {msg_code}')
-            raise KeyError(f'未注册的消息类型: {msg_code}')
+            logger.warning(f'Message Not Found: {msg_code}')
+            raise KeyError(f'Unregistered message type: {msg_code}')
 
         result = cls._MAPPING[msg_code]
-        logger.trace(f'获取消息类: {msg_code} -> {result.__name__}')
+        logger.trace(f'Get message class: {msg_code} -> {result.__name__}')
         return result
 
     @classmethod
     def get_registered_types(cls) -> list[MsgID]:
-        """返回所有已注册的消息类型"""
+        """Returns all registered message types"""
         return list(cls._MAPPING.keys())
 
     @classmethod
     def is_registered(cls, msg_code: MsgID) -> bool:
-        """检查消息类型是否已注册"""
+        """Check if the message type is registered"""
         return msg_code in cls._MAPPING

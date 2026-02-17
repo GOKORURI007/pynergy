@@ -1,0 +1,34 @@
+[project]
+name = "pynergy-protocol"
+version = "0.1.5"
+description = "Core synergy protocol definitions for python (Pynergy)"
+requires-python = ">=3.13"
+dependencies = [
+    "loguru>=0.7.3",
+]
+
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pynergy_protocol"]  # 直接指向 src 下的包目录
+
+[tool.ruff]
+preview = true
+fix-only = true
+show-fixes = true
+output-format = "grouped"
+line-length = 100
+src = [".", "inputflow", "tests"]
+
+[tool.ruff.format]
+preview = true
+docstring-code-format = true
+quote-style = "single"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.ruff.lint]
+preview = true
+select = ["E4", "E7", "E9", "F", "I"]

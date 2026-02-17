@@ -14,7 +14,6 @@ from .device import (
     UInputKeyboardDevice,
     UInputMouseDevice,
     WaylandDeviceContext,
-    X11DeviceContext,
 )
 from .device.base import PlatformInfo
 
@@ -79,23 +78,12 @@ def init_backend(
                         mouse = UInputMouseDevice()
                     if not cfg.keyboard_backend:
                         keyboard = UInputKeyboardDevice()
-                case 'x11':
-                    device_ctx = X11DeviceContext()
-                    if not cfg.mouse_backend:
-                        mouse = UInputMouseDevice()
-                    if not cfg.keyboard_backend:
-                        keyboard = UInputKeyboardDevice()
                 case _:
                     raise NotImplementedError(
                         f'Unsupported session type: {platform_info.session_type}'
                     )
 
             logger.info(f'Using {platform_info.session_type} backend')
-
-        case 'windows':
-            raise NotImplementedError('Windows support is WiP')
-        case 'darwin':
-            raise NotImplementedError('Darwin support is WiP')
         case _:
             raise NotImplementedError(f'Unsupported platform: {platform_info.platform}')
 

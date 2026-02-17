@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from loguru import logger
 
-from ..pynergy_protocol import HelloBackMsg, HelloMsg, MsgID, PynergyParser
+from packages.pynergy_protocol.src.pynergy_protocol import HelloBackMsg, HelloMsg, MsgID, PynergyParser
 from .protocols import ClientProtocol, ClientState, DispatcherProtocol
 
 if TYPE_CHECKING:

@@ -1,20 +1,9 @@
 [project]
-name = "pynergy-client"
+name = "pynergy"
 version = "0.1.5"
-description = "Add your description here"
+description = "Pynergy monorepo workspace"
 requires-python = ">=3.13"
-dependencies = [
-    "evdev>=1.9.2; sys_platform == 'linux'",
-    "loguru>=0.7.3",
-    "platformdirs>=4.5.0",
-    "pynput>=1.8.1",
-    "python-xlib>=0.33",
-    "toml>=0.10.2",
-    "typer>=0.23.1",
-]
-
-[project.scripts]
-pynergy-client = "src.pynergy_client.__main__:main"
+dependencies = []
 
 [dependency-groups]
 dev = [
@@ -29,15 +18,12 @@ dev = [
     "semver>=3.0.4",
 ]
 
-[build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
+[tool.uv]
+package = false  # Root 是 virtual，不打包
 
-[tool.setuptools.packages]
-find = { }
-
-[tool.setuptools.package-data]
-"pynergy_client" = ["locales/**/*.mo"]
+# ========== 关键修改：添加 Workspace 配置 ==========
+[tool.uv.workspace]
+members = ["packages/*"]
 
 [tool.ruff]
 preview = true
@@ -57,6 +43,3 @@ line-ending = "lf"
 [tool.ruff.lint]
 preview = true
 select = ["E4", "E7", "E9", "F", "I"]
-
-[tool.uv]
-package = false

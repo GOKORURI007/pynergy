@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from .client import PynergyClient
 
 from ..keymaps import hid_to_ecode, synergy_to_hid
-from ..pynergy_protocol import (
+from packages.pynergy_protocol.src.pynergy_protocol import (
     CEnterMsg,
     CInfoAckMsg,
     CKeepAliveMsg,

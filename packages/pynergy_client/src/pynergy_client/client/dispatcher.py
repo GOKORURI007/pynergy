@@ -4,7 +4,7 @@ from typing import Any
 
 from loguru import logger
 
-from ..pynergy_protocol import MsgID
+from packages.pynergy_protocol.src.pynergy_protocol import MsgID
 from .handlers import PynergyHandler
 from .protocols import ClientProtocol, DispatcherProtocol, MessageTask
 

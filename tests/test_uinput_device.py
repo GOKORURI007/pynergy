@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 from evdev import ecodes
 
-from src.pynergy_client.device.vdev_uinput import UInputKeyboardDevice, UInputMouseDevice
+from pynergy_client.device import UInputKeyboardDevice, UInputMouseDevice
 
 
 class TestUIputDeviceCreation:
