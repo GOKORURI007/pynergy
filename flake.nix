@@ -16,7 +16,7 @@
 
       pynergy-protocol = python.pkgs.buildPythonPackage {
         pname = "pynergy-protocol";
-        version = "0.1.5";
+        version = "1.0.0";
         src = ./packages/pynergy_protocol;
         format = "pyproject";
         nativeBuildInputs = with python.pkgs; [ hatchling ];
