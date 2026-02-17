@@ -19,7 +19,7 @@ Available_Backends = Literal[
 
 @dataclass
 class Config:
-    server: str = '127.0.0.1'
+    server: str = 'localhost'
     port: int = 24800
     client_name: str = 'Pynergy'
     screen_width: int | None = None

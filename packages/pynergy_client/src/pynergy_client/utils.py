@@ -127,19 +127,19 @@ def init_backend(
 
 
 def generate_self_signed_pem(cfg: config.Config):
-    # 1. 生成私钥
+    # 1. Generate private key
     key = rsa.generate_private_key(
         public_exponent=65537,
         key_size=2048,
     )
 
-    # 2. 构建证书信息
+    # 2. Build certificate information
     subject = issuer = x509.Name([
         x509.NameAttribute(NameOID.COMMON_NAME, u"Pynergy-Client"),
         x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"OpenSource"),
     ])
 
-    # 3. 创建自签名证书
+    # 3. Create self-signed certificate
     cert = x509.CertificateBuilder().subject_name(
         subject
     ).issuer_name(
@@ -151,60 +151,60 @@ def generate_self_signed_pem(cfg: config.Config):
     ).not_valid_before(
         datetime.datetime.utcnow()
     ).not_valid_after(
-        # 有效期 1 年
+        # Valid for 1 year
         datetime.datetime.utcnow() + datetime.timedelta(days=365)
     ).add_extension(
         x509.BasicConstraints(ca=False, path_length=None), critical=True,
     ).sign(key, hashes.SHA256())
 
-    # 4. 写入文件 (合并私钥和证书到同一个 PEM)
+    # 4. Write to file (merge private key and certificate into the same PEM)
     with open(cfg.pem_path, "wb") as f:
-        # 写入私钥
+        # Write private key
         f.write(key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption(),
         ))
-        # 写入证书
+        # Write certificate
         f.write(cert.public_bytes(serialization.Encoding.PEM))
 
-    print(f"成功生成证书文件: {cfg.pem_path}")
+    print(f"Successfully generated certificate file: {cfg.pem_path}")
 
 
 def get_or_create_client_cert(cfg: config.Config):
     """
-    检测证书是否存在及是否过期，必要时重新生成。
-    返回证书路径。
+    Check if certificate exists and whether it has expired, regenerate if necessary.
+    Returns certificate path.
     """
     should_generate = False
 
-    # 1. 检查文件是否存在
+    # 1. Check if file exists
     if not cfg.pem_path.exists():
-        print(f"[*] 证书文件 {cfg.pem_path} 不存在，准备生成...")
+        print(f"[*] Certificate file {cfg.pem_path} does not exist, generating...")
         should_generate = True
     else:
-        # 2. 如果存在，检查是否过期
+        # 2. If exists, check if expired
         try:
             with open(cfg.pem_path, "rb") as f:
                 pem_data = f.read()
-                # 加载证书对象
+                # Load certificate object
                 cert = x509.load_pem_x509_certificate(pem_data, default_backend())
 
-                # 检查过期时间 (UTC)
-                # 留出 1 天的缓冲期，防止临界点断连
+                # Check expiration time (UTC)
+                # Leave 1 day buffer to prevent disconnection at critical point
                 remaining_time = cert.not_valid_after - datetime.datetime.utcnow()
 
-                if remaining_time.total_seconds() <= 86400:  # 小于 24 小时
-                    print(f"[!] 证书即将过期或已过期（剩余 {remaining_time.days} 天），重新生成...")
+                if remaining_time.total_seconds() <= 86400:  # Less than 24 hours
+                    print(f"[!] Certificate is about to expire or has expired ({remaining_time.days} days remaining), regenerating...")
                     should_generate = True
                 else:
                     print(
-                        f"[+] 证书有效，有效期至: {cert.not_valid_after} (剩余 {remaining_time.days} 天)")
+                        f"[+] Certificate is valid, valid until: {cert.not_valid_after} ({remaining_time.days} days remaining)")
         except Exception as e:
-            print(f"[!] 证书解析失败: {e}，将尝试重新生成。")
+            print(f"[!] Failed to parse certificate: {e}, will attempt to regenerate.")
             should_generate = True
 
-    # 3. 执行生成逻辑
+    # 3. Execute generation logic
     if should_generate:
         generate_self_signed_pem(cfg)
 
@@ -226,11 +226,11 @@ def setup_ssl_context(cfg: config.Config) -> ssl.SSLContext | None:
     cert_file = get_or_create_client_cert(cfg)
 
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    # 加载这个自动生成的（或现有的）证书
+    # Load this auto-generated (or existing) certificate
     if cfg.mtls:
         context.load_cert_chain(certfile=cert_file)
 
-    # 对于 Deskflow 的自签名环境，通常需要这两行
+    # For Deskflow self-signed environment, these two lines are usually required
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE
 
@@ -256,25 +256,25 @@ async def validate_cert(writer, cfg: config.Config):
         known_hosts = json.load(f)
 
     if cfg.server not in known_hosts.keys():
-        typer.echo(f"发现新证书指纹: {current_fingerprint}")
-        confirm = await questionary.confirm("是否信任并继续? ", default=True).ask_async()
+        typer.echo(f"Found new certificate fingerprint: {current_fingerprint}")
+        confirm = await questionary.confirm("Trust and continue? ", default=True).ask_async()
         if confirm:
             known_hosts[cfg.server] = current_fingerprint
             with open(known_hosts_file, 'w') as f:
                 json.dump(known_hosts, f, indent=2)
         else:
             writer.close()
-            raise Exception("用户取消信任")
+            raise Exception("User cancelled trust")
 
     elif known_hosts[cfg.server] != current_fingerprint:
-        typer.echo(f"警告：服务端指纹变更，可能存在风险！")
-        typer.echo(f"当前指纹: {current_fingerprint}")
-        typer.echo(f"已知指纹: {known_hosts[cfg.server]}")
-        confirm = await questionary.confirm("是否信任并继续? ", default=False).ask_async()
+        typer.echo(f"Warning: Server fingerprint changed, potential security risk!")
+        typer.echo(f"Current fingerprint: {current_fingerprint}")
+        typer.echo(f"Known fingerprint: {known_hosts[cfg.server]}")
+        confirm = await questionary.confirm("Trust and continue? ", default=False).ask_async()
         if confirm:
             known_hosts[cfg.server] = current_fingerprint
             with open(known_hosts_file, 'w') as f:
                 json.dump(known_hosts, f, indent=2)
         else:
             writer.close()
-            raise Exception("警告：服务端指纹变更，可能存在风险！")
+            raise Exception("Warning: Server fingerprint changed, potential security risk!")

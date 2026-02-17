@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from click.core import ParameterSource
 from loguru import logger
 from platformdirs import user_config_path, user_log_path
 
@@ -23,12 +24,14 @@ app = typer.Typer(help=_('Pynergy Client'), add_completion=True)
 
 @app.command()
 def main(
+    ctx: typer.Context,
     config: Annotated[
         Path, typer.Option(help=_('Path to the configuration file'))
     ] = user_config_path(appname='pynergy', ensure_exists=True) / 'client-config.json',
-    server: Annotated[str | None, typer.Option(help=_('Deskflow/Others server IP address'))] = None,
-    port: Annotated[int | None, typer.Option(help=_('Port number'))] = None,
-    client_name: Annotated[str | None, typer.Option(help=_('Client name'))] = None,
+    server: Annotated[
+        str | None, typer.Option(help=_('Deskflow/Others server IP address'))] = 'localhost',
+    port: Annotated[int | None, typer.Option(help=_('Port number'))] = 24800,
+    client_name: Annotated[str | None, typer.Option(help=_('Client name'))] = platform.node(),
     mouse_backend: Annotated[
         Available_Backends | None, typer.Option(help=_('Mouse backend'))
     ] = None,
@@ -37,30 +40,32 @@ def main(
     ] = None,
     tls: Annotated[
         bool | None, typer.Option(help=_('Whether to use tls'))
-    ] = None,
+    ] = False,
     mtls: Annotated[
         bool | None, typer.Option(help=_('Whether to use mtls'))
-    ] = None,
+    ] = False,
     tls_trust: Annotated[
         bool | None, typer.Option(help=_('Whether to trust the server'))
-    ] = None,
+    ] = False,
     screen_width: Annotated[int | None, typer.Option(help=_('Screen width'))] = None,
     screen_height: Annotated[int | None, typer.Option(help=_('Screen height'))] = None,
     abs_mouse_move: Annotated[
         bool | None, typer.Option(help=_('Whether to use absolute displacement'))
-    ] = None,
+    ] = False,
     mouse_move_threshold: Annotated[
         int | None, typer.Option(help=_('Unit: ms, balances smoothness and performance'))
-    ] = None,
+    ] = 8,
     mouse_pos_sync_freq: Annotated[
         int | None,
         typer.Option(help=_('Sync frequency, sync with system real position every n moves')),
-    ] = None,
-    logger_name: Annotated[str | None, typer.Option(help=_('Logger name'))] = None,
-    log_dir: Annotated[str | None, typer.Option(help=_('Log directory location'))] = None,
-    log_file: Annotated[str | None, typer.Option(help=_('Log file name'))] = None,
-    log_level_file: Annotated[LogLevel | None, typer.Option(help=_('File log level'))] = None,
-    log_level_stdout: Annotated[LogLevel | None, typer.Option(help=_('Console log level'))] = None,
+    ] = 2,
+    logger_name: Annotated[str | None, typer.Option(help=_('Logger name'))] = 'Pynergy',
+    log_dir: Annotated[str | None, typer.Option(help=_('Log directory location'))] = user_log_path(
+        appname='pynergy', appauthor=False),
+    log_file: Annotated[str | None, typer.Option(help=_('Log file name'))] = 'pynergy.log',
+    log_level_file: Annotated[LogLevel | None, typer.Option(help=_('File log level'))] = 'WARNING',
+    log_level_stdout: Annotated[
+        LogLevel | None, typer.Option(help=_('Console log level'))] = 'INFO',
 ):
     """
     Launch the Pynergy client, which supports overriding JSON configurations via command-line arguments.
@@ -86,7 +91,12 @@ def main(
     # 3. Collect the parameters passed in by the CLI (i.e. the non-non-none) part of locals())
     # Exclude parameters that are not Config fields, such as config_file
     cli_args = locals()
-    overrides = {k: cli_args[k] for k in valid_fields if k in cli_args and cli_args[k] is not None}
+    overrides = {}
+    for k in valid_fields:
+        if k in cli_args:
+            source = ctx.get_parameter_source(k)
+            if source != ParameterSource.DEFAULT:
+                overrides[k] = cli_args[k]
 
     # Override config
     cfg = replace(cfg, **overrides)
@@ -133,7 +143,6 @@ async def run_app(cfg: Config):
     except KeyboardInterrupt:
         logger.info('Received interrupt signal, exiting...')
     except Exception as e:
-        raise e
         logger.error(f'Client error: {e}')
         sys.exit(1)
     finally:
