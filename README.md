@@ -31,13 +31,11 @@ This project originated from the issue where many Wayland Compositors have not i
 | Clipboard Sharing| 🔄 To be Implemented | Can be used with [sync-clipboard](https://github.com/GOKORURI007/sync-clipboard) |
 | File Transfer    | 🔄 To be Implemented | -                                                                          |
 
-### Technical Highlights
 
 - **Wayland Support**: Simulates input devices directly via the `uinput` kernel module without relying on the RemoteDesktop portal. Theoretically works on any device that supports uinput
 - **Multi-backend Architecture**: Modular design for easy extension of different input backends
 - **Internationalization Support**: Built-in Chinese and English language packs
 - **Flexible Configuration**: Supports both command-line arguments and configuration files
-- **Auto-reconnection**: Can automatically restart after crashes when used with systemd
 
 ## Installation
 

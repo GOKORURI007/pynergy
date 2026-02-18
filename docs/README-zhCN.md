@@ -34,14 +34,12 @@ Wayland 环境下的键鼠共享功能。
 | 剪贴板共享  | 🔄 待实现 | 可配合 [sync-clipboard](https://github.com/GOKORURI007/sync-clipboard) 使用 |
 | 文件传输   | 🔄 待实现 | -                                                                      |
 
-### 技术亮点
 
-- **Wayland 支持 **：通过 `uinput` 内核模块直接模拟输入设备，无需依赖 RemoteDesktop portal，理论上任何支持
+- **Wayland 支持**：通过 `uinput` 内核模块直接模拟输入设备，无需依赖 RemoteDesktop portal，理论上任何支持
   uinput 的设备均可使用
-- ** 多后端架构 **：模块化设计，便于扩展不同的输入后端
-- ** 国际化支持 **：内置中英文语言包
-- ** 灵活配置 **：支持命令行参数和配置文件两种方式
-- ** 自动重连 **：配合 systemd 可实现崩溃后自动重启
+- **多后端架构**：模块化设计，便于扩展不同的输入后端
+- **国际化支持**：内置中英文语言包
+- **灵活配置**：支持命令行参数和配置文件两种方式
 
 ## 安装
 
@@ -96,28 +94,28 @@ environment.systemPackages = [
 
 在大多数主流发行版（如 Ubuntu, Debian, Arch, Fedora）中，推荐通过 `udev` 规则永久解决权限问题：
 
-* ** 创建规则文件：**
+* **创建规则文件**
   创建一个名为 `/etc/udev/rules.d/99-pynergy.rules` 的文件，内容如下：
 
 ```udev
 KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"
 ```
 
-* ** 配置用户组：**
+* **配置用户组：**
   将你的当前用户加入 `input` 组：
 
 ```bash
 sudo usermod -aG input $USER
 ```
 
-* ** 加载模块：**
+* **加载模块：**
   确保 `uinput` 模块已加载：
 
 ```bash
 sudo modprobe uinput
 ```
 
-> ** 注意：** 修改用户组后，通常需要 ** 注销并重新登录 ** 才能生效。
+> **注意：** 修改用户组后，通常需要 **注销并重新登录** 才能生效。
 
 ### 2. 特定发行版配置
 
@@ -395,6 +393,6 @@ pynergy-client --server <ip> --log-level-stdout DEBUG --log-level-file TRACE
 
 <div style="text-align: center;">
 
-** 如果觉得这个项目对你有帮助，请给个 Star ⭐**
+**如果觉得这个项目对你有帮助，请给个 Star ⭐**
 
 </div>
