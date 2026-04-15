@@ -76,7 +76,7 @@ def main():
         print(f'❌ 错误：当前目录不是 Git 仓库: {e}')
         return
 
-    if Path('.jj').exists:
+    if Path('.jj').exists():
         if not questionary.confirm(
             f'你正在一个 jj 仓库中，即将自动checkout {RELEASE_BRANCH}，是否继续？', default=True
         ).ask():
